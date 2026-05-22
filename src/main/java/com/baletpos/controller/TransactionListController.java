@@ -52,9 +52,9 @@ public class TransactionListController {
 
     private final SaleDAO saleDAO = new SaleDAO();
     private final ObservableList<Sale> saleList = FXCollections.observableArrayList();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm",
-            Locale.of("id", "ID"));
+            new Locale("id", "ID"));
 
     // Pagination
     private PaginationControl pagination;

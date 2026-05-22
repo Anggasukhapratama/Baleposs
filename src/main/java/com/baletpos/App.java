@@ -2,8 +2,6 @@ package com.baletpos;
 
 import atlantafx.base.theme.NordLight;
 import com.baletpos.config.DatabaseConfig;
-import com.baletpos.config.DatabaseDialect;
-import com.baletpos.service.BackupService;
 import com.baletpos.util.ImageUtil;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -52,19 +50,18 @@ public class App extends Application {
         // Apply light-only modern theme (NordLight - clean & minimal)
         Application.setUserAgentStylesheet(new NordLight().getUserAgentStylesheet());
 
-        // Initialize Database
+        // Initialize Database (Firebase)
         try {
-            DatabaseConfig.initialize();
-            if (DatabaseConfig.getDialect() == DatabaseDialect.SQLITE) {
-                com.baletpos.util.MigrationRunner.runMigrations();
-            }
+            com.baletpos.config.FirebaseConfig.initialize();
 
             // Copy dummy images if first run
             ImageUtil.copyDummyImages();
-            BackupService.start();
 
         } catch (Exception e) {
             logger.error("Critical Error: Database initialization failed", e);
+            com.baletpos.util.ModalUtil.showError("Gagal terhubung ke database. Cek file serviceAccountKey.json Anda.", e);
+            javafx.application.Platform.exit();
+            System.exit(1);
             return;
         }
 

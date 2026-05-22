@@ -71,7 +71,7 @@ public class PurchaseController {
     private final ProductDAO productDAO = new ProductDAO();
     private final PurchaseDAO purchaseDAO = new PurchaseDAO();
     private final ObservableList<PurchaseItem> items = FXCollections.observableArrayList();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     private List<Supplier> allSuppliers;
     private List<Product> allProducts;

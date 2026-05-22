@@ -75,7 +75,7 @@ public class POSController {
 
     private final ObservableList<SaleItem> cartItems = FXCollections.observableArrayList();
     private final List<PaymentRow> paymentRows = new ArrayList<>();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     private List<Product> allProductsHelper;
     private String currentSearchQuery = "";
@@ -111,7 +111,7 @@ public class POSController {
             userLabel.setText(Session.getInstance().getCurrentUser().getFullName());
         }
         if (clockLabel != null) {
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", Locale.of("id", "ID"));
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm", new Locale("id", "ID"));
             clockLabel.setText(java.time.LocalDateTime.now().format(dtf));
         }
     }
@@ -1071,7 +1071,7 @@ public class POSController {
         infoBox.setAlignment(Pos.CENTER_LEFT);
         Label nameLbl = new Label(p.getName());
         nameLbl.setStyle("-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1e293b;");
-        Label skuLbl = new Label(p.getSku() + " • " + p.getProductType().name());
+        Label skuLbl = new Label(p.getSku() + " â€¢ " + p.getProductType().name());
         skuLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
         infoBox.getChildren().addAll(nameLbl, skuLbl);
 

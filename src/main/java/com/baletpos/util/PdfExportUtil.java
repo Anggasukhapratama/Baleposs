@@ -33,11 +33,11 @@ import java.util.Locale;
  */
 public class PdfExportUtil {
         private static final Logger logger = LoggerFactory.getLogger(PdfExportUtil.class);
-        private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+        private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMMM yyyy",
-                        Locale.of("id", "ID"));
+                        new Locale("id", "ID"));
         private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm",
-                        Locale.of("id", "ID"));
+                        new Locale("id", "ID"));
 
         private static final DeviceRgb PRIMARY_COLOR = new DeviceRgb(44, 62, 80);
         private static final DeviceRgb HEADER_BG = new DeviceRgb(52, 73, 94);

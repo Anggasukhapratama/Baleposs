@@ -272,11 +272,11 @@ public class ModalUtil {
 
     private static String getEmoji(ModalType type) {
         return switch (type) {
-            case INFO -> "💡";
-            case SUCCESS -> "🎉";
-            case WARNING -> "🤔";
-            case ERROR -> "🤕"; // Bandage face for error -> "Sakit" / Error
-            case CONFIRM -> "🧐";
+            case INFO -> "ðŸ’¡";
+            case SUCCESS -> "ðŸŽ‰";
+            case WARNING -> "ðŸ¤”";
+            case ERROR -> "ðŸ¤•"; // Bandage face for error -> "Sakit" / Error
+            case CONFIRM -> "ðŸ§";
         };
     }
 }

@@ -40,7 +40,7 @@ public class ProductFormController {
     private boolean saveClicked = false;
     private Product product;
     private Stage dialogStage;
-    private final NumberFormat curFmt = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat curFmt = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     @FXML
     public void initialize() {

@@ -38,14 +38,14 @@ public class PdfService {
 
     private static final DecimalFormat CURRENCY;
     static {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("id", "ID"));
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("id", "ID"));
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
         CURRENCY = new DecimalFormat("#,###", symbols);
     }
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm",
-            Locale.of("id", "ID"));
+            new Locale("id", "ID"));
 
     public void generateReceipt(Sale sale) {
         try {

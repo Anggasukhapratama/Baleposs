@@ -1,15 +1,10 @@
 package com.baletpos.controller;
 
 import com.baletpos.config.DatabaseConfig;
-import com.baletpos.config.DatabaseDialect;
 import com.baletpos.dao.ReportDAO;
-import javafx.geometry.Pos;
 import javafx.fxml.FXML;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +42,6 @@ public class DashboardContentController {
     private Label monthExpenseLabel;
     @FXML
     private Label expenseTrendLabel;
-    @FXML
-    private Label dbStatusLabel;
 
     // Chart
     @FXML
@@ -61,8 +54,6 @@ public class DashboardContentController {
     private Label chartSummaryLabel;
     @FXML
     private Label growthBadge;
-    @FXML
-    private VBox latestTransactionsContainer;
 
     // Top Products
     @FXML
@@ -70,19 +61,13 @@ public class DashboardContentController {
     @FXML
     private Label topProduct1Name;
     @FXML
-    private Label topProduct1Sku;
-    @FXML
     private Label topProduct1Qty;
     @FXML
     private Label topProduct2Name;
     @FXML
-    private Label topProduct2Sku;
-    @FXML
     private Label topProduct2Qty;
     @FXML
     private Label topProduct3Name;
-    @FXML
-    private Label topProduct3Sku;
     @FXML
     private Label topProduct3Qty;
 
@@ -91,8 +76,6 @@ public class DashboardContentController {
     private VBox lowStockContainer;
     @FXML
     private Label lowStock1Name;
-    @FXML
-    private Label lowStockTotalLabel;
     @FXML
     private Label lowStock1Qty;
     @FXML
@@ -111,7 +94,7 @@ public class DashboardContentController {
     private Button restock3Btn;
 
     private final ReportDAO reportDAO = new ReportDAO();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     public DashboardContentController() {
         currencyFormat.setMaximumFractionDigits(0);
@@ -124,30 +107,12 @@ public class DashboardContentController {
 
     private void loadDashboardData() {
         try {
-            loadDatabaseStatus();
             loadKpiData();
             loadSalesTrendChart();
             loadTopProducts();
-            loadLatestTransactions();
             loadLowStockProducts();
         } catch (Exception e) {
             logger.error("Error loading dashboard data", e);
-        }
-    }
-
-    private void loadDatabaseStatus() {
-        if (dbStatusLabel == null) {
-            return;
-        }
-
-        if (DatabaseConfig.getDialect() == DatabaseDialect.POSTGRES) {
-            dbStatusLabel.setText("DB: Supabase / PostgreSQL");
-            dbStatusLabel.setStyle(
-                    "-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 4; -fx-padding: 6 10; -fx-font-size: 11px; -fx-font-weight: 900;");
-        } else {
-            dbStatusLabel.setText("DB: SQLite lokal");
-            dbStatusLabel.setStyle(
-                    "-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 4; -fx-padding: 6 10; -fx-font-size: 11px; -fx-font-weight: 900;");
         }
     }
 
@@ -280,41 +245,49 @@ public class DashboardContentController {
         series.setName("Penjualan");
 
         LocalDate today = LocalDate.now();
-        DateTimeFormatter dayFmt = DateTimeFormatter.ofPattern("EEE", Locale.of("id", "ID"));
+        DateTimeFormatter monthFmt = DateTimeFormatter.ofPattern("MMM", new Locale("id", "ID"));
 
         BigDecimal totalSales = BigDecimal.ZERO;
-        BigDecimal firstDaySales = BigDecimal.ZERO;
-        BigDecimal lastDaySales = BigDecimal.ZERO;
+        BigDecimal firstMonthSales = BigDecimal.ZERO;
+        BigDecimal lastMonthSales = BigDecimal.ZERO;
 
-        for (int i = 6; i >= 0; i--) {
-            LocalDate day = today.minusDays(i);
-            ReportDAO.ReportRow dayReport = reportDAO.getDashboardSummary(day);
-            BigDecimal revenue = dayReport.getBigDecimal("today_sales_total");
+        // Get last 6 months data
+        for (int i = 5; i >= 0; i--) {
+            LocalDate monthStart = today.minusMonths(i).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+
+            ReportDAO.ReportRow monthReport = reportDAO.getProfitLossReport(monthStart, monthEnd);
+            BigDecimal revenue = monthReport.getBigDecimal("gross_revenue");
             if (revenue == null)
                 revenue = BigDecimal.ZERO;
 
             totalSales = totalSales.add(revenue);
 
-            if (i == 6)
-                firstDaySales = revenue;
+            if (i == 5)
+                firstMonthSales = revenue;
             if (i == 0)
-                lastDaySales = revenue;
+                lastMonthSales = revenue;
 
-            String dayLabel = day.format(dayFmt);
-            series.getData().add(new XYChart.Data<>(dayLabel, revenue.doubleValue() / 1_000_000));
+            String monthLabel = monthStart.format(monthFmt);
+            series.getData().add(new XYChart.Data<>(monthLabel, revenue.doubleValue() / 1_000_000));
         }
 
         salesTrendChart.getData().add(series);
 
         // Update summary
         if (chartSummaryLabel != null) {
-            chartSummaryLabel.setText("Total 7 hari: " + currencyFormat.format(totalSales));
+            LocalDate start = today.minusMonths(5).withDayOfMonth(1);
+            LocalDate end = today;
+            String startMonth = start.format(monthFmt);
+            String endMonth = end.format(monthFmt);
+            chartSummaryLabel.setText(
+                    "Total: " + currencyFormat.format(totalSales) + " (" + startMonth + " - " + endMonth + ")");
         }
 
         // Update growth badge
         if (growthBadge != null) {
-            String growth = calculateTrend(lastDaySales, firstDaySales);
-            growthBadge.setText(growth + " vs 7 hari lalu");
+            String growth = calculateTrend(lastMonthSales, firstMonthSales);
+            growthBadge.setText(growth + " Pertumbuhan");
             if (growth.startsWith("+")) {
                 growthBadge.setStyle(
                         "-fx-background-color: #EFF6FF; -fx-text-fill: #1E40AF; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 6 12; -fx-background-radius: 20;");
@@ -323,94 +296,6 @@ public class DashboardContentController {
                         "-fx-background-color: #DBEAFE; -fx-text-fill: #1E40AF; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 6 12; -fx-background-radius: 20;");
             }
         }
-    }
-
-    private void loadLatestTransactions() {
-        if (latestTransactionsContainer == null) {
-            return;
-        }
-
-        latestTransactionsContainer.getChildren().clear();
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(
-                        "SELECT invoice_number, sale_date, total_amount, status FROM sales ORDER BY sale_date DESC LIMIT 5");
-                ResultSet rs = stmt.executeQuery()) {
-
-            boolean hasRows = false;
-            while (rs.next()) {
-                hasRows = true;
-                latestTransactionsContainer.getChildren().add(createTransactionRow(
-                        rs.getString("invoice_number"),
-                        formatDateTime(rs.getString("sale_date")),
-                        BigDecimal.valueOf(rs.getLong("total_amount")),
-                        rs.getString("status")));
-            }
-
-            if (!hasRows) {
-                Label empty = new Label("Belum ada transaksi.");
-                empty.getStyleClass().add("mini-td");
-                latestTransactionsContainer.getChildren().add(empty);
-            }
-        } catch (Exception e) {
-            logger.error("Error loading latest transactions", e);
-            Label error = new Label("Gagal memuat transaksi terbaru.");
-            error.getStyleClass().add("mini-td");
-            latestTransactionsContainer.getChildren().add(error);
-        }
-    }
-
-    private HBox createTransactionRow(String invoiceNumber, String saleDate, BigDecimal totalAmount, String status) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("list-row");
-
-        VBox details = new VBox(2);
-        details.getStyleClass().add("transaction-details");
-        HBox.setHgrow(details, Priority.ALWAYS);
-
-        Label invoice = new Label(invoiceNumber == null || invoiceNumber.isBlank() ? "-" : invoiceNumber);
-        invoice.getStyleClass().add("row-title");
-
-        Label time = new Label(saleDate);
-        time.getStyleClass().add("row-subtitle");
-        details.getChildren().addAll(invoice, time);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label total = new Label(currencyFormat.format(totalAmount == null ? BigDecimal.ZERO : totalAmount));
-        total.getStyleClass().add("row-value");
-
-        Label statusLabel = new Label(normalizeStatus(status));
-        statusLabel.getStyleClass().add("mini-td");
-        statusLabel.getStyleClass().add("COMPLETED".equalsIgnoreCase(status) ? "status-success" : "status-pending");
-
-        row.getChildren().addAll(details, spacer, total, statusLabel);
-        return row;
-    }
-
-    private String normalizeStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "-";
-        }
-        return switch (status.toUpperCase(Locale.ROOT)) {
-            case "COMPLETED" -> "BERHASIL";
-            case "VOIDED" -> "BATAL";
-            case "RETURNED" -> "RETUR";
-            default -> status.toUpperCase(Locale.ROOT);
-        };
-    }
-
-    private String formatDateTime(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return "-";
-        }
-        String normalized = raw.replace('T', ' ');
-        if (normalized.length() >= 19) {
-            return normalized.substring(0, 19);
-        }
-        return normalized;
     }
 
     private void loadTopProducts() {
@@ -432,15 +317,11 @@ public class DashboardContentController {
                 ReportDAO.ReportRow p1 = allSales.get(0);
                 if (topProduct1Name != null)
                     topProduct1Name.setText(truncate(p1.getString("product_name"), 25));
-                if (topProduct1Sku != null)
-                    topProduct1Sku.setText("SKU: " + p1.getString("sku"));
                 if (topProduct1Qty != null)
                     topProduct1Qty.setText(p1.getInt("qty_sold") + " Terjual");
             } else {
                 if (topProduct1Name != null)
                     topProduct1Name.setText("Belum ada data");
-                if (topProduct1Sku != null)
-                    topProduct1Sku.setText("SKU: -");
                 if (topProduct1Qty != null)
                     topProduct1Qty.setText("-");
             }
@@ -449,15 +330,11 @@ public class DashboardContentController {
                 ReportDAO.ReportRow p2 = allSales.get(1);
                 if (topProduct2Name != null)
                     topProduct2Name.setText(truncate(p2.getString("product_name"), 25));
-                if (topProduct2Sku != null)
-                    topProduct2Sku.setText("SKU: " + p2.getString("sku"));
                 if (topProduct2Qty != null)
                     topProduct2Qty.setText(p2.getInt("qty_sold") + " Terjual");
             } else {
                 if (topProduct2Name != null)
                     topProduct2Name.setText("Belum ada data");
-                if (topProduct2Sku != null)
-                    topProduct2Sku.setText("SKU: -");
                 if (topProduct2Qty != null)
                     topProduct2Qty.setText("-");
             }
@@ -466,15 +343,11 @@ public class DashboardContentController {
                 ReportDAO.ReportRow p3 = allSales.get(2);
                 if (topProduct3Name != null)
                     topProduct3Name.setText(truncate(p3.getString("product_name"), 25));
-                if (topProduct3Sku != null)
-                    topProduct3Sku.setText("SKU: " + p3.getString("sku"));
                 if (topProduct3Qty != null)
                     topProduct3Qty.setText(p3.getInt("qty_sold") + " Terjual");
             } else {
                 if (topProduct3Name != null)
                     topProduct3Name.setText("Belum ada data");
-                if (topProduct3Sku != null)
-                    topProduct3Sku.setText("SKU: -");
                 if (topProduct3Qty != null)
                     topProduct3Qty.setText("-");
             }
@@ -486,21 +359,13 @@ public class DashboardContentController {
 
     private void loadLowStockProducts() {
         try {
-            String countSql = "SELECT COUNT(*) FROM products WHERE is_active = 1 AND stock <= 5";
             String sql = "SELECT name, stock FROM products WHERE is_active = 1 AND stock <= 5 ORDER BY stock ASC LIMIT 3";
 
             List<String[]> lowStockList = new ArrayList<>();
 
             try (Connection conn = DatabaseConfig.getConnection();
-                    PreparedStatement countStmt = conn.prepareStatement(countSql);
-                    ResultSet countRs = countStmt.executeQuery();
                     PreparedStatement pstmt = conn.prepareStatement(sql);
                     ResultSet rs = pstmt.executeQuery()) {
-
-                if (countRs.next() && lowStockTotalLabel != null) {
-                    int count = countRs.getInt(1);
-                    lowStockTotalLabel.setText(count + " item");
-                }
 
                 while (rs.next()) {
                     lowStockList.add(new String[] { rs.getString("name"), String.valueOf(rs.getInt("stock")) });

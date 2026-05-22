@@ -1,16 +1,18 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.DatabaseConfig;
-import com.baletpos.config.SqlDialect;
+import com.baletpos.config.FirestoreHelper;
 import com.baletpos.model.ExpenseCode;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -19,55 +21,53 @@ import java.util.Optional;
 public class ExpenseCodeDAO {
     private static final Logger logger = LoggerFactory.getLogger(ExpenseCodeDAO.class);
     private static final DateTimeFormatter DB_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String COLLECTION = "expense_codes";
 
     public List<ExpenseCode> findAll() {
         List<ExpenseCode> codes = new ArrayList<>();
-        String sql = "SELECT * FROM expense_codes WHERE is_active = 1 ORDER BY code";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("is_active", 1)
+                    .orderBy("code")
+                    .get();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                codes.add(mapResultSetToExpenseCode(rs));
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                codes.add(mapDocumentToExpenseCode(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding all expense codes", e);
         }
         return codes;
     }
 
     public Optional<ExpenseCode> findById(Long id) {
-        String sql = "SELECT * FROM expense_codes WHERE id = ? AND is_active = 1";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToExpenseCode(rs));
-                }
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
+            if (doc.exists()) {
+                return Optional.of(mapDocumentToExpenseCode(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding expense code by id: {}", id, e);
         }
         return Optional.empty();
     }
 
     public Optional<ExpenseCode> findByCode(String code) {
-        String sql = "SELECT * FROM expense_codes WHERE code = ? AND is_active = 1";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("code", code)
+                    .whereEqualTo("is_active", 1)
+                    .limit(1)
+                    .get();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, code);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToExpenseCode(rs));
-                }
+            QuerySnapshot querySnapshot = future.get();
+            if (!querySnapshot.isEmpty()) {
+                return Optional.of(mapDocumentToExpenseCode(querySnapshot.getDocuments().get(0)));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding expense code by code: {}", code, e);
         }
         return Optional.empty();
@@ -82,71 +82,70 @@ public class ExpenseCodeDAO {
     }
 
     private void insert(ExpenseCode expenseCode) {
-        String sql = "INSERT INTO expense_codes (code, name, description) VALUES (?, ?, ?)";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Long newId = FirestoreHelper.getNextId(COLLECTION);
+            expenseCode.setId(newId);
+            expenseCode.setActive(true);
+            expenseCode.setCreatedAt(LocalDateTime.now());
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, expenseCode.getCode());
-            pstmt.setString(2, expenseCode.getName());
-            pstmt.setString(3, expenseCode.getDescription());
-
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                // SQLite style: get last inserted ID
-                try (Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery("SELECT " + SqlDialect.lastInsertIdExpression())) {
-                    if (rs.next()) {
-                        expenseCode.setId(rs.getLong(1));
-                    }
-                }
-            }
-        } catch (SQLException e) {
+            db.collection(COLLECTION).document(String.valueOf(newId)).set(expenseCodeToMap(expenseCode)).get();
+            logger.info("ExpenseCode created: {}", expenseCode.getCode());
+        } catch (Exception e) {
             logger.error("Error inserting expense code", e);
-            throw new RuntimeException("Gagal menyimpan kode biaya");
+            throw new RuntimeException("Gagal menyimpan kode biaya", e);
         }
     }
 
     private void update(ExpenseCode expenseCode) {
-        String sql = "UPDATE expense_codes SET name = ?, description = ? WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, expenseCode.getName());
-            pstmt.setString(2, expenseCode.getDescription());
-            pstmt.setLong(3, expenseCode.getId());
-
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            db.collection(COLLECTION).document(String.valueOf(expenseCode.getId())).set(expenseCodeToMap(expenseCode)).get();
+            logger.info("ExpenseCode updated: {}", expenseCode.getCode());
+        } catch (Exception e) {
             logger.error("Error updating expense code", e);
-            throw new RuntimeException("Error updating expense code: " + e.getMessage());
+            throw new RuntimeException("Error updating expense code: " + e.getMessage(), e);
         }
     }
 
     public void delete(Long id) {
-        String sql = "UPDATE expense_codes SET is_active = 0 WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Map<String, Object> update = new HashMap<>();
+            update.put("is_active", 0);
+            db.collection(COLLECTION).document(String.valueOf(id)).update(update).get();
+            logger.info("ExpenseCode deleted (soft): {}", id);
+        } catch (Exception e) {
             logger.error("Error deleting expense code", e);
-            throw new RuntimeException("Error deleting expense code: " + e.getMessage());
+            throw new RuntimeException("Error deleting expense code: " + e.getMessage(), e);
         }
     }
 
-    private ExpenseCode mapResultSetToExpenseCode(ResultSet rs) throws SQLException {
-        ExpenseCode ec = new ExpenseCode();
-        ec.setId(rs.getLong("id"));
-        ec.setCode(rs.getString("code"));
-        ec.setName(rs.getString("name"));
-        ec.setDescription(rs.getString("description"));
-        ec.setActive(rs.getInt("is_active") == 1);
+    private Map<String, Object> expenseCodeToMap(ExpenseCode ec) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", ec.getId());
+        map.put("code", ec.getCode());
+        map.put("name", ec.getName());
+        map.put("description", ec.getDescription());
+        map.put("is_active", ec.isActive() ? 1 : 0);
+        
+        if (ec.getCreatedAt() != null) {
+            map.put("created_at", ec.getCreatedAt().format(DB_DATE_FMT));
+        }
+        return map;
+    }
 
-        String createdAtStr = rs.getString("created_at");
+    private ExpenseCode mapDocumentToExpenseCode(DocumentSnapshot doc) {
+        ExpenseCode ec = new ExpenseCode();
+        ec.setId(doc.getLong("id"));
+        ec.setCode(doc.getString("code"));
+        ec.setName(doc.getString("name"));
+        ec.setDescription(doc.getString("description"));
+        
+        Long isActive = doc.getLong("is_active");
+        ec.setActive(isActive != null && isActive == 1);
+
+        String createdAtStr = doc.getString("created_at");
         if (createdAtStr != null) {
             ec.setCreatedAt(LocalDateTime.parse(createdAtStr, DB_DATE_FMT));
         }

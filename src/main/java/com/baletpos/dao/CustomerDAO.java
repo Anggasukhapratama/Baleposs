@@ -1,133 +1,86 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.DatabaseConfig;
+import com.baletpos.config.FirestoreHelper;
 import com.baletpos.model.Customer;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class CustomerDAO {
     private static final Logger logger = LoggerFactory.getLogger(CustomerDAO.class);
+    private static final String COLLECTION = "customers";
 
     public List<Customer> findAll() {
         List<Customer> customers = new ArrayList<>();
-        String sql = "SELECT * FROM customers WHERE is_active = 1";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                customers.add(mapResultSetToCustomer(rs));
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("is_active", 1)
+                    .get();
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                customers.add(mapDocumentToCustomer(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding all customers", e);
         }
         return customers;
     }
 
     public List<Customer> search(String query) {
+        // Firestore is very limited for LIKE %search%. We pull all active and filter in memory
         List<Customer> customers = new ArrayList<>();
-        String sql = "SELECT * FROM customers WHERE is_active = 1 AND (name LIKE ? OR phone LIKE ?)";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            String searchPattern = "%" + query + "%";
-            pstmt.setString(1, searchPattern);
-            pstmt.setString(2, searchPattern);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    customers.add(mapResultSetToCustomer(rs));
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("is_active", 1)
+                    .get();
+            String lowerQuery = query != null ? query.toLowerCase() : "";
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                Customer c = mapDocumentToCustomer(doc);
+                if (c.getName().toLowerCase().contains(lowerQuery) || 
+                    (c.getPhone() != null && c.getPhone().toLowerCase().contains(lowerQuery)) ||
+                    (c.getEmail() != null && c.getEmail().toLowerCase().contains(lowerQuery))) {
+                    customers.add(c);
                 }
             }
-        } catch (SQLException e) {
-            logger.error("Error searching customers with query: {}", query, e);
+        } catch (Exception e) {
+            logger.error("Error searching customers", e);
         }
         return customers;
     }
 
     public Optional<Customer> findById(Long id) {
-        String sql = "SELECT * FROM customers WHERE id = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToCustomer(rs));
-                }
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
+            if (doc.exists()) {
+                return Optional.of(mapDocumentToCustomer(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding customer by id: {}", id, e);
         }
         return Optional.empty();
     }
 
     public List<Customer> findAllPaged(int limit, int offset, String query) {
-        List<Customer> customers = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM customers WHERE is_active = 1");
-
-        if (query != null && !query.isEmpty()) {
-            sql.append(" AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)");
-        }
-        sql.append(" ORDER BY name ASC LIMIT ? OFFSET ?");
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-
-            int paramIndex = 1;
-            if (query != null && !query.isEmpty()) {
-                String pattern = "%" + query + "%";
-                pstmt.setString(paramIndex++, pattern);
-                pstmt.setString(paramIndex++, pattern);
-                pstmt.setString(paramIndex++, pattern);
-            }
-            pstmt.setInt(paramIndex++, limit);
-            pstmt.setInt(paramIndex, offset);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    customers.add(mapResultSetToCustomer(rs));
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error finding paged customers", e);
-        }
-        return customers;
+        // Implement simple in-memory pagination since Firestore cursor pagination is complex for random offset
+        List<Customer> allFiltered = search(query);
+        allFiltered.sort((c1, c2) -> c1.getName().compareToIgnoreCase(c2.getName()));
+        
+        int start = Math.min(offset, allFiltered.size());
+        int end = Math.min(start + limit, allFiltered.size());
+        return allFiltered.subList(start, end);
     }
 
     public int countFiltered(String query) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM customers WHERE is_active = 1");
-
-        if (query != null && !query.isEmpty()) {
-            sql.append(" AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)");
-        }
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-
-            if (query != null && !query.isEmpty()) {
-                String pattern = "%" + query + "%";
-                pstmt.setString(1, pattern);
-                pstmt.setString(2, pattern);
-                pstmt.setString(3, pattern);
-            }
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error counting customers", e);
-        }
-        return 0;
+        return search(query).size();
     }
 
     public void save(Customer customer) {
@@ -139,69 +92,64 @@ public class CustomerDAO {
     }
 
     public void insert(Customer customer) {
-        String sql = "INSERT INTO customers (name, phone, address, email, notes, is_active) VALUES (?, ?, ?, ?, ?, 1)";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Long newId = FirestoreHelper.getNextId(COLLECTION);
+            customer.setId(newId);
+            customer.setActive(true);
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, customer.getName());
-            pstmt.setString(2, customer.getPhone());
-            pstmt.setString(3, customer.getAddress());
-            pstmt.setString(4, customer.getEmail());
-            pstmt.setString(5, customer.getNotes());
-            pstmt.executeUpdate();
-
+            db.collection(COLLECTION).document(String.valueOf(newId)).set(customerToMap(customer)).get();
             logger.info("Customer created: {}", customer.getName());
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error inserting customer", e);
         }
     }
 
     public void update(Customer customer) {
-        String sql = "UPDATE customers SET name = ?, phone = ?, address = ?, email = ?, notes = ? WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, customer.getName());
-            pstmt.setString(2, customer.getPhone());
-            pstmt.setString(3, customer.getAddress());
-            pstmt.setString(4, customer.getEmail());
-            pstmt.setString(5, customer.getNotes());
-            pstmt.setLong(6, customer.getId());
-            pstmt.executeUpdate();
-
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            db.collection(COLLECTION).document(String.valueOf(customer.getId())).set(customerToMap(customer)).get();
             logger.info("Customer updated: {}", customer.getName());
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error updating customer", e);
         }
     }
 
     public void delete(Long id) {
-        // Soft delete - set is_active = 0
-        String sql = "UPDATE customers SET is_active = 0 WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            pstmt.executeUpdate();
-
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Map<String, Object> update = new HashMap<>();
+            update.put("is_active", 0);
+            db.collection(COLLECTION).document(String.valueOf(id)).update(update).get();
             logger.info("Customer deleted (soft): {}", id);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error deleting customer", e);
         }
     }
 
-    private Customer mapResultSetToCustomer(ResultSet rs) throws SQLException {
+    private Map<String, Object> customerToMap(Customer c) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", c.getId());
+        map.put("name", c.getName());
+        map.put("phone", c.getPhone());
+        map.put("address", c.getAddress());
+        map.put("email", c.getEmail());
+        map.put("notes", c.getNotes());
+        map.put("is_active", c.isActive() ? 1 : 0);
+        return map;
+    }
+
+    private Customer mapDocumentToCustomer(DocumentSnapshot doc) {
         Customer c = new Customer();
-        c.setId(rs.getLong("id"));
-        c.setName(rs.getString("name"));
-        c.setPhone(rs.getString("phone"));
-        c.setAddress(rs.getString("address"));
-        c.setEmail(rs.getString("email"));
-        c.setNotes(rs.getString("notes"));
-        c.setActive(rs.getInt("is_active") == 1);
+        c.setId(doc.getLong("id"));
+        c.setName(doc.getString("name"));
+        c.setPhone(doc.getString("phone"));
+        c.setAddress(doc.getString("address"));
+        c.setEmail(doc.getString("email"));
+        c.setNotes(doc.getString("notes"));
+        
+        Long isActive = doc.getLong("is_active");
+        c.setActive(isActive != null && isActive == 1);
         return c;
     }
 }

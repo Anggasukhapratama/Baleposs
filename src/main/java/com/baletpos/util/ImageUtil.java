@@ -26,15 +26,15 @@ public class ImageUtil {
     // Allowed extensions
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
-    // Max dimensions
-    private static final int MAX_WIDTH = 800;
-    private static final int MAX_HEIGHT = 800;
+    // Max dimensions for Base64 (Keep it small for Firestore)
+    private static final int MAX_WIDTH = 300;
+    private static final int MAX_HEIGHT = 300;
     private static final int THUMBNAIL_SIZE = 64;
 
     // JPEG quality (0.0 - 1.0)
-    private static final double COMPRESSION_QUALITY = 0.85;
+    private static final double COMPRESSION_QUALITY = 0.75;
 
-    // Image directory
+    // Image directory (Fallback for old data)
     private static final Path IMAGE_DIR;
     private static final Path PLACEHOLDER_PATH;
 
@@ -98,91 +98,56 @@ public class ImageUtil {
     }
 
     /**
-     * Process dan simpan gambar produk
+     * Process dan simpan gambar produk ke bentuk Base64
      * 
      * @param sourceFile File sumber
      * @param sku        SKU produk
-     * @return Relative path untuk disimpan ke database, atau null jika gagal
+     * @return Base64 string berawalan 'base64:', atau null jika gagal
      */
     public static String saveProductImage(File sourceFile, String sku) {
-        logger.info("[UPLOAD] Source file: {}", sourceFile != null ? sourceFile.getAbsolutePath() : "null");
+        logger.info("[UPLOAD Base64] Source file: {}", sourceFile != null ? sourceFile.getAbsolutePath() : "null");
 
         if (sourceFile == null || !sourceFile.exists()) {
-            logger.warn("[UPLOAD] Source file is null or doesn't exist");
+            logger.warn("[UPLOAD Base64] Source file is null or doesn't exist");
             return null;
         }
 
         if (!isValidExtension(sourceFile)) {
-            logger.warn("[UPLOAD] Invalid file extension: {}", sourceFile.getName());
+            logger.warn("[UPLOAD Base64] Invalid file extension: {}", sourceFile.getName());
             return null;
         }
 
         try {
-            // Ensure directory exists
-            Files.createDirectories(IMAGE_DIR);
-            logger.info("[UPLOAD] Target directory: {}", IMAGE_DIR);
-
-            // Generate unique filename
-            String uuid = UUID.randomUUID().toString().substring(0, 8);
-            String filename = sku.replaceAll("[^a-zA-Z0-9-]", "_") + "_" + uuid + ".jpg";
-            Path targetPath = IMAGE_DIR.resolve(filename);
-
-            logger.info("[UPLOAD] Target path: {}", targetPath.toAbsolutePath());
-
-            // Read, resize, and save
             BufferedImage original = ImageIO.read(sourceFile);
             if (original == null) {
-                logger.error("[UPLOAD] Failed to read image: {}", sourceFile.getName());
+                logger.error("[UPLOAD Base64] Failed to read image: {}", sourceFile.getName());
                 return null;
             }
 
-            // Resize if larger than max
-            int width = original.getWidth();
-            int height = original.getHeight();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                Thumbnails.of(original)
-                        .size(MAX_WIDTH, MAX_HEIGHT)
-                        .outputQuality(COMPRESSION_QUALITY)
-                        .outputFormat("jpg")
-                        .toFile(targetPath.toFile());
-            } else {
-                // Just compress without resize
-                Thumbnails.of(original)
-                        .scale(1.0)
-                        .outputQuality(COMPRESSION_QUALITY)
-                        .outputFormat("jpg")
-                        .toFile(targetPath.toFile());
-            }
+            // Resize and compress
+            Thumbnails.of(original)
+                    .size(MAX_WIDTH, MAX_HEIGHT)
+                    .outputQuality(COMPRESSION_QUALITY)
+                    .outputFormat("jpg")
+                    .toOutputStream(baos);
 
-            // Verify file saved successfully
-            boolean exists = Files.exists(targetPath);
-            long size = exists ? Files.size(targetPath) : 0;
-            logger.info("[UPLOAD] File saved: exists={}, size={} bytes", exists, size);
+            byte[] imageBytes = baos.toByteArray();
+            String base64Data = Base64.getEncoder().encodeToString(imageBytes);
 
-            if (!exists) {
-                logger.error("[UPLOAD] File was not saved properly!");
-                return null;
-            }
+            logger.info("[UPLOAD Base64] Success. Encoded size: {} bytes", base64Data.length());
 
-            // Clear cache for this path
-            imageCache.remove(filename);
-            thumbnailCache.remove(filename);
-
-            // Return RELATIVE path for DB storage
-            String relativePath = "data/images/products/" + filename;
-            logger.info("[UPLOAD] Returning relative path for DB: {}", relativePath);
-
-            return relativePath;
+            return "base64:" + base64Data;
 
         } catch (IOException e) {
-            logger.error("[UPLOAD] Failed to save product image", e);
+            logger.error("[UPLOAD Base64] Failed to process product image", e);
             return null;
         }
     }
 
     /**
-     * Load gambar produk dari path (dengan cache)
+     * Load gambar produk dari path/Base64 (dengan cache)
      */
     public static Image loadProductImage(String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
@@ -195,28 +160,33 @@ public class ImageUtil {
         }
 
         try {
-            // Resolve path: if it starts with "data/", resolve from working dir
-            // Otherwise assume it's just filename in IMAGE_DIR
-            Path fullPath;
-            if (imagePath.startsWith("data/") || imagePath.startsWith("data\\")) {
-                fullPath = Paths.get(".", imagePath).toAbsolutePath().normalize();
-            } else {
-                fullPath = IMAGE_DIR.resolve(imagePath);
-            }
-
-            logger.debug("[LOAD] Resolving image path: {} -> {}", imagePath, fullPath);
-
-            if (Files.exists(fullPath)) {
-                Image image = new Image(fullPath.toUri().toString());
+            if (imagePath.startsWith("base64:")) {
+                String base64Data = imagePath.substring(7);
+                byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+                Image image = new Image(new ByteArrayInputStream(decodedBytes));
                 if (!image.isError()) {
                     imageCache.put(imagePath, image);
                     return image;
                 }
             } else {
-                logger.warn("[LOAD] Image file not found: {}", fullPath);
+                // Fallback for old local files
+                Path fullPath;
+                if (imagePath.startsWith("data/") || imagePath.startsWith("data\\")) {
+                    fullPath = Paths.get(".", imagePath).toAbsolutePath().normalize();
+                } else {
+                    fullPath = IMAGE_DIR.resolve(imagePath);
+                }
+
+                if (Files.exists(fullPath)) {
+                    Image image = new Image(fullPath.toUri().toString());
+                    if (!image.isError()) {
+                        imageCache.put(imagePath, image);
+                        return image;
+                    }
+                }
             }
         } catch (Exception e) {
-            logger.warn("[LOAD] Failed to load image: {}", imagePath, e);
+            logger.warn("[LOAD] Failed to load image: {}", imagePath.length() > 50 ? "Base64 data..." : imagePath, e);
         }
 
         return getPlaceholder();
@@ -236,26 +206,33 @@ public class ImageUtil {
         }
 
         try {
-            // Resolve path: if it starts with "data/", resolve from working dir
-            Path fullPath;
-            if (imagePath.startsWith("data/") || imagePath.startsWith("data\\")) {
-                fullPath = Paths.get(".", imagePath).toAbsolutePath().normalize();
-            } else {
-                fullPath = IMAGE_DIR.resolve(imagePath);
-            }
-
-            if (Files.exists(fullPath)) {
-                // Load with specified dimensions for performance
-                Image thumbnail = new Image(fullPath.toUri().toString(),
-                        THUMBNAIL_SIZE, THUMBNAIL_SIZE, true, true, true);
-
+            if (imagePath.startsWith("base64:")) {
+                String base64Data = imagePath.substring(7);
+                byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+                Image thumbnail = new Image(new ByteArrayInputStream(decodedBytes), THUMBNAIL_SIZE, THUMBNAIL_SIZE, true, true);
                 if (!thumbnail.isError()) {
                     thumbnailCache.put(imagePath, thumbnail);
                     return thumbnail;
                 }
+            } else {
+                // Fallback for old local files
+                Path fullPath;
+                if (imagePath.startsWith("data/") || imagePath.startsWith("data\\")) {
+                    fullPath = Paths.get(".", imagePath).toAbsolutePath().normalize();
+                } else {
+                    fullPath = IMAGE_DIR.resolve(imagePath);
+                }
+
+                if (Files.exists(fullPath)) {
+                    Image thumbnail = new Image(fullPath.toUri().toString(), THUMBNAIL_SIZE, THUMBNAIL_SIZE, true, true);
+                    if (!thumbnail.isError()) {
+                        thumbnailCache.put(imagePath, thumbnail);
+                        return thumbnail;
+                    }
+                }
             }
         } catch (Exception e) {
-            logger.warn("[LOAD] Failed to load thumbnail: {}", imagePath);
+            logger.warn("[LOAD] Failed to load thumbnail: {}", imagePath.length() > 50 ? "Base64 data..." : imagePath);
         }
 
         return getPlaceholderThumbnail();

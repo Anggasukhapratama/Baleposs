@@ -88,7 +88,7 @@ public class InventoryReportController {
 
     private final ReportDAO reportDAO = new ReportDAO();
     private final ObservableList<ReportRow> reportData = FXCollections.observableArrayList();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     private List<ReportRow> allData = new ArrayList<>();
     private List<ReportRow> filteredData = new ArrayList<>();

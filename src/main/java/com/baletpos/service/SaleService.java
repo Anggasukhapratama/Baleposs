@@ -3,7 +3,6 @@ package com.baletpos.service;
 import com.baletpos.dao.SaleDAO;
 import com.baletpos.model.Sale;
 
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -34,7 +33,7 @@ public class SaleService {
         return saleDAO.findByInvoiceNumber(invoiceNumber);
     }
 
-    public void voidSale(Long saleId, Long voidedBy, String voidReason) throws SQLException {
+    public void voidSale(Long saleId, Long voidedBy, String voidReason) throws Exception {
         saleDAO.voidSale(saleId, voidedBy, voidReason);
     }
 }

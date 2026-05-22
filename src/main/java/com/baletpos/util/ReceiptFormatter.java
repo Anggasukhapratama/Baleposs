@@ -18,7 +18,7 @@ public class ReceiptFormatter {
     private static final DecimalFormat CURRENCY_FMT;
 
     static {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("id", "ID"));
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("id", "ID"));
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
         CURRENCY_FMT = new DecimalFormat("#,###", symbols);

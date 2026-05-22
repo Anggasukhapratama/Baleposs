@@ -1,130 +1,83 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.DatabaseConfig;
-import com.baletpos.config.SqlDialect;
+import com.baletpos.config.FirestoreHelper;
 import com.baletpos.model.Supplier;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-/**
- * Data Access Object untuk Supplier
- */
 public class SupplierDAO {
     private static final Logger logger = LoggerFactory.getLogger(SupplierDAO.class);
     private static final DateTimeFormatter DB_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String COLLECTION = "suppliers";
 
     public List<Supplier> findAll() {
         List<Supplier> suppliers = new ArrayList<>();
-        String sql = "SELECT * FROM suppliers WHERE is_active = 1 ORDER BY code";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("is_active", 1)
+                    .orderBy("code")
+                    .get();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                suppliers.add(mapResultSetToSupplier(rs));
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                suppliers.add(mapDocumentToSupplier(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding all suppliers", e);
         }
         return suppliers;
     }
 
     public List<Supplier> findAllPaged(int limit, int offset, String query) {
-        List<Supplier> suppliers = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM suppliers WHERE is_active = 1 ");
-
-        if (query != null && !query.isBlank()) {
-            sql.append("AND (code LIKE ? OR name LIKE ?) ");
-        }
-
-        sql.append("ORDER BY code LIMIT ? OFFSET ?");
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-
-            int idx = 1;
-            if (query != null && !query.isBlank()) {
-                String pattern = "%" + query + "%";
-                pstmt.setString(idx++, pattern);
-                pstmt.setString(idx++, pattern);
-            }
-            pstmt.setInt(idx++, limit);
-            pstmt.setInt(idx, offset);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    suppliers.add(mapResultSetToSupplier(rs));
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error finding paged suppliers", e);
-        }
-        return suppliers;
+        List<Supplier> allFiltered = search(query);
+        allFiltered.sort((s1, s2) -> s1.getCode().compareToIgnoreCase(s2.getCode()));
+        
+        int start = Math.min(offset, allFiltered.size());
+        int end = Math.min(start + limit, allFiltered.size());
+        return allFiltered.subList(start, end);
     }
 
     public int countFiltered(String query) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM suppliers WHERE is_active = 1 ");
-        if (query != null && !query.isBlank()) {
-            sql.append("AND (code LIKE ? OR name LIKE ?) ");
-        }
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-            int idx = 1;
-            if (query != null && !query.isBlank()) {
-                String pattern = "%" + query + "%";
-                pstmt.setString(idx++, pattern);
-                pstmt.setString(idx, pattern);
-            }
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next())
-                    return rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            logger.error("Error counting suppliers", e);
-        }
-        return 0;
+        return search(query).size();
     }
 
     public Optional<Supplier> findById(Long id) {
-        String sql = "SELECT * FROM suppliers WHERE id = ? AND is_active = 1";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToSupplier(rs));
-                }
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
+            if (doc.exists()) {
+                return Optional.of(mapDocumentToSupplier(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding supplier by id: {}", id, e);
         }
         return Optional.empty();
     }
 
     public Optional<Supplier> findByCode(String code) {
-        String sql = "SELECT * FROM suppliers WHERE code = ? AND is_active = 1";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("code", code)
+                    .whereEqualTo("is_active", 1)
+                    .limit(1)
+                    .get();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, code);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToSupplier(rs));
-                }
+            QuerySnapshot querySnapshot = future.get();
+            if (!querySnapshot.isEmpty()) {
+                return Optional.of(mapDocumentToSupplier(querySnapshot.getDocuments().get(0)));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error finding supplier by code: {}", code, e);
         }
         return Optional.empty();
@@ -132,21 +85,21 @@ public class SupplierDAO {
 
     public List<Supplier> search(String query) {
         List<Supplier> suppliers = new ArrayList<>();
-        String sql = "SELECT * FROM suppliers WHERE is_active = 1 AND (code LIKE ? OR name LIKE ?) ORDER BY code";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereEqualTo("is_active", 1)
+                    .get();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            String searchPattern = "%" + query + "%";
-            pstmt.setString(1, searchPattern);
-            pstmt.setString(2, searchPattern);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    suppliers.add(mapResultSetToSupplier(rs));
+            String lowerQuery = query != null ? query.toLowerCase() : "";
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                Supplier s = mapDocumentToSupplier(doc);
+                if (s.getCode().toLowerCase().contains(lowerQuery) || 
+                    s.getName().toLowerCase().contains(lowerQuery)) {
+                    suppliers.add(s);
                 }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Error searching suppliers with query: {}", query, e);
         }
         return suppliers;
@@ -161,80 +114,76 @@ public class SupplierDAO {
     }
 
     private void insert(Supplier supplier) {
-        String sql = "INSERT INTO suppliers (code, name, contact, address, phone, email) VALUES (?, ?, ?, ?, ?, ?)";
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Long newId = FirestoreHelper.getNextId(COLLECTION);
+            supplier.setId(newId);
+            supplier.setActive(true);
+            supplier.setCreatedAt(LocalDateTime.now());
 
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, supplier.getCode());
-            pstmt.setString(2, supplier.getName());
-            pstmt.setString(3, supplier.getContact());
-            pstmt.setString(4, supplier.getAddress());
-            pstmt.setString(5, supplier.getPhone());
-            pstmt.setString(6, supplier.getEmail());
-
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                // SQLite style: get last inserted ID
-                try (Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery("SELECT " + SqlDialect.lastInsertIdExpression())) {
-                    if (rs.next()) {
-                        supplier.setId(rs.getLong(1));
-                    }
-                }
-            }
-        } catch (SQLException e) {
+            db.collection(COLLECTION).document(String.valueOf(newId)).set(supplierToMap(supplier)).get();
+            logger.info("Supplier created: {}", supplier.getName());
+        } catch (Exception e) {
             logger.error("Error inserting supplier", e);
-            throw new RuntimeException("Gagal menyimpan supplier");
+            throw new RuntimeException("Gagal menyimpan supplier", e);
         }
     }
 
     private void update(Supplier supplier) {
-        String sql = "UPDATE suppliers SET name = ?, contact = ?, address = ?, phone = ?, email = ? WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, supplier.getName());
-            pstmt.setString(2, supplier.getContact());
-            pstmt.setString(3, supplier.getAddress());
-            pstmt.setString(4, supplier.getPhone());
-            pstmt.setString(5, supplier.getEmail());
-            pstmt.setLong(6, supplier.getId());
-
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            db.collection(COLLECTION).document(String.valueOf(supplier.getId())).set(supplierToMap(supplier)).get();
+            logger.info("Supplier updated: {}", supplier.getName());
+        } catch (Exception e) {
             logger.error("Error updating supplier", e);
-            throw new RuntimeException("Error updating supplier: " + e.getMessage());
+            throw new RuntimeException("Error updating supplier: " + e.getMessage(), e);
         }
     }
 
     public void delete(Long id) {
-        String sql = "UPDATE suppliers SET is_active = 0 WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, id);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            Map<String, Object> update = new HashMap<>();
+            update.put("is_active", 0);
+            db.collection(COLLECTION).document(String.valueOf(id)).update(update).get();
+            logger.info("Supplier deleted (soft): {}", id);
+        } catch (Exception e) {
             logger.error("Error deleting supplier", e);
-            throw new RuntimeException("Error deleting supplier: " + e.getMessage());
+            throw new RuntimeException("Error deleting supplier: " + e.getMessage(), e);
         }
     }
 
-    private Supplier mapResultSetToSupplier(ResultSet rs) throws SQLException {
-        Supplier s = new Supplier();
-        s.setId(rs.getLong("id"));
-        s.setCode(rs.getString("code"));
-        s.setName(rs.getString("name"));
-        s.setContact(rs.getString("contact"));
-        s.setAddress(rs.getString("address"));
-        s.setPhone(rs.getString("phone"));
-        s.setEmail(rs.getString("email"));
-        s.setActive(rs.getInt("is_active") == 1);
+    private Map<String, Object> supplierToMap(Supplier s) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", s.getId());
+        map.put("code", s.getCode());
+        map.put("name", s.getName());
+        map.put("contact", s.getContact());
+        map.put("address", s.getAddress());
+        map.put("phone", s.getPhone());
+        map.put("email", s.getEmail());
+        map.put("is_active", s.isActive() ? 1 : 0);
+        
+        if (s.getCreatedAt() != null) {
+            map.put("created_at", s.getCreatedAt().format(DB_DATE_FMT));
+        }
+        return map;
+    }
 
-        String createdAtStr = rs.getString("created_at");
+    private Supplier mapDocumentToSupplier(DocumentSnapshot doc) {
+        Supplier s = new Supplier();
+        s.setId(doc.getLong("id"));
+        s.setCode(doc.getString("code"));
+        s.setName(doc.getString("name"));
+        s.setContact(doc.getString("contact"));
+        s.setAddress(doc.getString("address"));
+        s.setPhone(doc.getString("phone"));
+        s.setEmail(doc.getString("email"));
+        
+        Long isActive = doc.getLong("is_active");
+        s.setActive(isActive != null && isActive == 1);
+
+        String createdAtStr = doc.getString("created_at");
         if (createdAtStr != null) {
             s.setCreatedAt(LocalDateTime.parse(createdAtStr, DB_DATE_FMT));
         }

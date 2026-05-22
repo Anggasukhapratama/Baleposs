@@ -894,6 +894,9 @@ public class ProductController {
         clearImageBtn.setStyle(
                 "-fx-background-color: transparent; -fx-text-fill: #1E40AF; -fx-border-color: #1E40AF; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 8 14; -fx-font-weight: 600; -fx-cursor: hand;");
 
+        Label imageHint = new Label("Maks 2MB (Diubah ke 300x300)");
+        imageHint.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+
         uploadImageBtn.setOnAction(e -> {
             String skuValue = skuField.getText().trim();
             if (skuValue.isEmpty()) {
@@ -925,7 +928,7 @@ public class ProductController {
             imagePreview.setImage(ImageUtil.loadProductThumbnail(null));
         });
 
-        VBox imageBtnBox = new VBox(8, uploadImageBtn, clearImageBtn);
+        VBox imageBtnBox = new VBox(8, uploadImageBtn, clearImageBtn, imageHint);
         imageBtnBox.setAlignment(Pos.CENTER_LEFT);
         HBox imageBox = new HBox(12, imagePreview, imageBtnBox);
         imageBox.setAlignment(Pos.CENTER_LEFT);

@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'org.beryx.jlink' version '3.0.1'
+    id 'org.beryx.jlink' version '3.1.1'
 }
 
 group = 'com.baletpos'
@@ -24,12 +24,19 @@ javafx {
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics']
 }
 
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 dependencies {
     // SQLite JDBC
     implementation 'org.xerial:sqlite-jdbc:3.44.1.0'
 
     // PostgreSQL JDBC for Supabase
     implementation 'org.postgresql:postgresql:42.7.4'
+    
+    // Firebase Admin SDK
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
     
     // BCrypt for password hashing
     implementation 'org.mindrot:jbcrypt:0.4'
@@ -75,15 +82,11 @@ jlink {
     imageZip = project.file("${buildDir}/distributions/baletpos-${version}.zip")
     options = ['--strip-debug', '--compress', 'zip-6', '--no-header-files', '--no-man-pages']
     
-    // For non-modular app, we can't easily use jlink to create a small runtime
-    // But beryx-jlink plugin can handle non-modular via merged modules or classpath approach
-    // We will stick to basic application run for now.
+    // Using standard build instead
     
     launcher {
         name = 'BaletPOS'
     }
-    
-    // Ignore jpackage for now if it complicates things, or let it try with defaults
 }
 
 jar {
@@ -117,4 +120,18 @@ task generateTemplate(type: JavaExec) {
     description = 'Generate Excel template for product import'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.baletpos.util.GenerateTemplate'
+}
+
+task seedUsers(type: JavaExec) {
+    group = 'application'
+    description = 'Seed Firestore users (admin and kasir)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.baletpos.util.FirestoreUserSeeder'
+}
+
+task testLogin(type: JavaExec) {
+    group = 'application'
+    description = 'Debug firestore login data'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.baletpos.util.TestLogin'
 }

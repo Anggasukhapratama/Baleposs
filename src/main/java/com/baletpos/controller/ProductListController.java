@@ -44,7 +44,7 @@ public class ProductListController {
 
     public ProductListController() {
         this.productDAO = new ProductDAO();
-        this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+        this.currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         this.currencyFormat.setMaximumFractionDigits(0);
     }
 

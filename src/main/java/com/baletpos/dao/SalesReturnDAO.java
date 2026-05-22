@@ -1,310 +1,324 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.DatabaseConfig;
-import com.baletpos.config.SqlDialect;
+import com.baletpos.config.FirestoreHelper;
 import com.baletpos.model.SalesReturn;
 import com.baletpos.model.SalesReturnItem;
 import com.baletpos.model.StockMovement;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SalesReturnDAO {
     private static final Logger logger = LoggerFactory.getLogger(SalesReturnDAO.class);
     private static final DateTimeFormatter NO_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter DB_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public void createReturn(SalesReturn salesReturn) throws SQLException {
-        Connection conn = null;
+    private static final String COLLECTION = "sales_returns";
+    private static final String ITEMS_COL = "sales_return_items";
+    private static final String STOCK_MOV_COL = "stock_movements";
+
+    public void createReturn(SalesReturn salesReturn) throws Exception {
+        Firestore db = FirestoreHelper.getDb();
+        WriteBatch batch = db.batch();
+
         try {
-            conn = DatabaseConfig.getConnection();
-            conn.setAutoCommit(false);
-
-            // 1. Generate Return Number (RT-YYYYMMDD-XXXX)
-            String returnNo = generateReturnNumber(conn);
+            // 1. Generate Return Number
+            String returnNo = generateReturnNumber();
             salesReturn.setReturnNo(returnNo);
 
-            // 2. Insert Header
-            long returnId = insertHeader(conn, salesReturn);
+            // 2. Generate Return ID & Insert Header
+            Long returnId = FirestoreHelper.getNextId(COLLECTION);
             salesReturn.setId(returnId);
+
+            DocumentReference retRef = db.collection(COLLECTION).document(String.valueOf(returnId));
+            batch.set(retRef, returnToMap(salesReturn));
 
             // 3. Process Items
             for (SalesReturnItem item : salesReturn.getItems()) {
                 item.setSalesReturnId(returnId);
+                
+                Long itemId = FirestoreHelper.getNextId(ITEMS_COL);
+                item.setId(itemId);
 
-                // Insert Item
-                insertItem(conn, item);
+                DocumentReference itemRef = db.collection(ITEMS_COL).document(String.valueOf(itemId));
+                batch.set(itemRef, returnItemToMap(item));
 
                 // Update Stock (ADD)
-                updateProductStock(conn, item.getProductId(), item.getQtyReturn());
+                DocumentReference prodRef = db.collection("products").document(String.valueOf(item.getProductId()));
+                batch.update(prodRef, "stock", FieldValue.increment(item.getQtyReturn()));
 
                 // Insert Movement
+                Long movId = FirestoreHelper.getNextId(STOCK_MOV_COL);
                 StockMovement mv = new StockMovement();
+                mv.setId(movId);
                 mv.setProductId(item.getProductId());
                 mv.setMovementType(StockMovement.MovementType.SALE_RETURN);
                 mv.setReferenceType("SALES_RETURN");
                 mv.setReferenceId(returnId);
                 mv.setQuantityChange(item.getQtyReturn()); // Positive
-
-                // Need current stock for consistency (optional but good practice)
-                int currentStock = getProductStock(conn, item.getProductId());
-                mv.setStockAfter(currentStock);
-                mv.setStockBefore(currentStock - item.getQtyReturn());
-
                 mv.setCreatedBy(salesReturn.getUserId());
                 mv.setNotes("Return " + returnNo);
 
-                insertMovement(conn, mv);
+                DocumentReference movRef = db.collection(STOCK_MOV_COL).document(String.valueOf(movId));
+                batch.set(movRef, stockMovementToMap(mv));
             }
 
-            conn.commit();
+            batch.commit().get();
             logger.info("Sales Return created successfully: {}", returnNo);
 
         } catch (Exception e) {
-            if (conn != null)
-                conn.rollback();
-            throw new SQLException("Failed to create sales return", e);
-        } finally {
-            if (conn != null) {
-                conn.setAutoCommit(true);
-                conn.close();
-            }
+            logger.error("Failed to create sales return", e);
+            throw new Exception("Failed to create sales return: " + e.getMessage(), e);
         }
     }
 
-    private String generateReturnNumber(Connection conn) throws SQLException {
+    private String generateReturnNumber() {
         String datePart = LocalDate.now().format(NO_FMT);
         String prefix = "RT-" + datePart + "-";
 
-        // Simple count logic for brevity (Sequence table better but this is acceptable
-        // for now)
-        String sql = "SELECT COUNT(*) FROM sales_returns WHERE return_number LIKE ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, prefix + "%");
-            try (ResultSet rs = pstmt.executeQuery()) {
-                int count = 0;
-                if (rs.next())
-                    count = rs.getInt(1);
-                return prefix + String.format("%04d", count + 1);
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .whereGreaterThanOrEqualTo("return_number", prefix)
+                    .whereLessThan("return_number", prefix + "\uf8ff")
+                    .orderBy("return_number", Query.Direction.DESCENDING)
+                    .limit(1)
+                    .get();
+
+            QuerySnapshot querySnapshot = future.get();
+            int nextNum = 1;
+            if (!querySnapshot.isEmpty()) {
+                String lastNo = querySnapshot.getDocuments().get(0).getString("return_number");
+                if (lastNo != null && lastNo.length() > prefix.length()) {
+                    try {
+                        String numPart = lastNo.substring(prefix.length());
+                        nextNum = Integer.parseInt(numPart) + 1;
+                    } catch (NumberFormatException ignored) {}
+                }
             }
+            return String.format("%s%04d", prefix, nextNum);
+        } catch (Exception e) {
+            logger.error("Error generating return number", e);
+            return prefix + System.currentTimeMillis();
         }
     }
 
-    private long insertHeader(Connection conn, SalesReturn ret) throws SQLException {
-        String sql = "INSERT INTO sales_returns (return_number, sale_id, return_date, total_amount, reason, status, created_by) " +
-                "VALUES (?, ?, " + SqlDialect.nowExpression() + ", ?, ?, 'COMPLETED', ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, ret.getReturnNo());
-            pstmt.setLong(2, ret.getSaleId());
-            pstmt.setBigDecimal(3, ret.getTotalAmount());
-            pstmt.setString(4, ret.getNotes() != null ? ret.getNotes() : "Retur Penjualan");
-            pstmt.setLong(5, ret.getUserId());
-            pstmt.executeUpdate();
-
-            return fetchIdByNo(conn, ret.getReturnNo());
-        }
-    }
-
-    private long fetchIdByNo(Connection conn, String no) throws SQLException {
-        try (PreparedStatement pstmt = conn.prepareStatement("SELECT id FROM sales_returns WHERE return_number = ?")) {
-            pstmt.setString(1, no);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next())
-                    return rs.getLong(1);
-                throw new SQLException("ID lookup failed");
-            }
-        }
-    }
-
-    private void insertItem(Connection conn, SalesReturnItem item) throws SQLException {
-        String sql = "INSERT INTO sales_return_items (sales_return_id, sale_item_id, product_id, quantity, unit_price, hpp_per_unit, subtotal) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, item.getSalesReturnId());
-            pstmt.setLong(2, item.getSaleItemId());
-            pstmt.setLong(3, item.getProductId());
-            pstmt.setInt(4, item.getQtyReturn());
-            pstmt.setBigDecimal(5, item.getUnitPrice());
-            pstmt.setBigDecimal(6, item.getSnapshotHpp());
-            pstmt.setBigDecimal(7, item.getLineTotal());
-            pstmt.executeUpdate();
-        }
-    }
-
-    private void updateProductStock(Connection conn, Long productId, int change) throws SQLException {
-        String sql = "UPDATE products SET stock = stock + ? WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, change);
-            pstmt.setLong(2, productId);
-            pstmt.executeUpdate();
-        }
-    }
-
-    private void insertMovement(Connection conn, StockMovement mv) throws SQLException {
-        String sql = "INSERT INTO stock_movements (product_id, movement_type, reference_type, reference_id, quantity_change, stock_before, stock_after, notes, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, " + SqlDialect.nowExpression() + ")";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, mv.getProductId());
-            pstmt.setString(2, mv.getMovementType().name());
-            pstmt.setString(3, mv.getReferenceType());
-            pstmt.setLong(4, mv.getReferenceId());
-            pstmt.setInt(5, mv.getQuantityChange());
-            pstmt.setInt(6, mv.getStockBefore());
-            pstmt.setInt(7, mv.getStockAfter());
-            pstmt.setString(8, mv.getNotes());
-            pstmt.setLong(9, mv.getCreatedBy());
-            pstmt.executeUpdate();
-        }
-    }
-
-    private int getProductStock(Connection conn, Long productId) throws SQLException {
-        try (PreparedStatement pstmt = conn.prepareStatement("SELECT stock FROM products WHERE id = ?")) {
-            pstmt.setLong(1, productId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next())
-                    return rs.getInt(1);
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Get total quantity returned for a specific product in a specific sale
-     */
     public int getReturnedQuantity(Long saleId, Long productId) {
-        String sql = """
-                SELECT SUM(sri.quantity)
-                FROM sales_return_items sri
-                JOIN sales_returns sr ON sri.sales_return_id = sr.id
-                WHERE sr.sale_id = ? AND sri.product_id = ?
-                """;
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, saleId);
-            pstmt.setLong(2, productId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            // This queries flat sales_return_items collection.
+            // Since we don't store saleId in return_items (only sales_return_id), we need a sub-query or denormalize.
+            // Wait, sale_id is in header. It's better to find headers with saleId first.
+            ApiFuture<QuerySnapshot> retFuture = db.collection(COLLECTION)
+                    .whereEqualTo("sale_id", saleId)
+                    .get();
+
+            List<Long> returnIds = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : retFuture.get().getDocuments()) {
+                returnIds.add(doc.getLong("id"));
+            }
+
+            if (returnIds.isEmpty()) return 0;
+
+            int totalQty = 0;
+            // Get all items matching these returnIds
+            for (Long rId : returnIds) {
+                ApiFuture<QuerySnapshot> itemsFuture = db.collection(ITEMS_COL)
+                        .whereEqualTo("sales_return_id", rId)
+                        .whereEqualTo("product_id", productId)
+                        .get();
+                for (QueryDocumentSnapshot doc : itemsFuture.get().getDocuments()) {
+                    Long qty = doc.getLong("quantity");
+                    if (qty != null) {
+                        totalQty += qty.intValue();
+                    }
                 }
             }
-        } catch (SQLException e) {
+            return totalQty;
+
+        } catch (Exception e) {
             logger.error("Failed to fetch returned quantity", e);
+            return 0;
         }
-        return 0;
     }
 
-    /**
-     * Fetch all sales returns with sale invoice info
-     */
-    public java.util.List<SalesReturn> findAll() {
-        java.util.List<SalesReturn> list = new java.util.ArrayList<>();
-        String sql = """
-                SELECT sr.id, sr.return_number, sr.sale_id, sr.created_at, sr.reason, sr.total_amount,
-                       s.invoice_number, u.full_name as user_name
-                FROM sales_returns sr
-                LEFT JOIN sales s ON sr.sale_id = s.id
-                LEFT JOIN users u ON sr.created_by = u.id
-                ORDER BY sr.created_at DESC
-                """;
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                ResultSet rs = pstmt.executeQuery()) {
-            while (rs.next()) {
-                SalesReturn ret = new SalesReturn();
-                ret.setId(rs.getLong("id"));
-                ret.setReturnNo(rs.getString("return_number"));
-                ret.setSaleId(rs.getLong("sale_id"));
-                String createdAt = rs.getString("created_at");
-                if (createdAt != null) {
-                    ret.setCreatedAt(java.time.LocalDateTime.parse(createdAt.replace(" ", "T")));
-                }
-                ret.setNotes(rs.getString("reason"));
-                ret.setTotalAmount(rs.getBigDecimal("total_amount"));
-                ret.setSaleInvoiceNumber(rs.getString("invoice_number"));
-                ret.setCreatedByName(rs.getString("user_name"));
-                list.add(ret);
+    public List<SalesReturn> findAll() {
+        List<SalesReturn> list = new ArrayList<>();
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
+                    .orderBy("created_at", Query.Direction.DESCENDING)
+                    .get();
+
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                list.add(mapDocumentToReturn(doc));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Failed to fetch sales returns", e);
         }
         return list;
     }
 
-    /**
-     * Fetch sales return by ID with items
-     */
     public SalesReturn findById(Long id) {
-        String sql = """
-                SELECT sr.id, sr.return_number, sr.sale_id, sr.created_at, sr.reason, sr.total_amount,
-                       s.invoice_number, u.full_name as user_name
-                FROM sales_returns sr
-                LEFT JOIN sales s ON sr.sale_id = s.id
-                LEFT JOIN users u ON sr.created_by = u.id
-                WHERE sr.id = ?
-                """;
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    SalesReturn ret = new SalesReturn();
-                    ret.setId(rs.getLong("id"));
-                    ret.setReturnNo(rs.getString("return_number"));
-                    ret.setSaleId(rs.getLong("sale_id"));
-                    String createdAt = rs.getString("created_at");
-                    if (createdAt != null) {
-                        ret.setCreatedAt(java.time.LocalDateTime.parse(createdAt.replace(" ", "T")));
-                    }
-                    ret.setNotes(rs.getString("reason"));
-                    ret.setTotalAmount(rs.getBigDecimal("total_amount"));
-                    ret.setSaleInvoiceNumber(rs.getString("invoice_number"));
-                    ret.setCreatedByName(rs.getString("user_name"));
-                    ret.setItems(findItemsByReturnId(ret.getId()));
-                    return ret;
-                }
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
+            if (doc.exists()) {
+                SalesReturn ret = mapDocumentToReturn(doc);
+                ret.setItems(findItemsByReturnId(ret.getId()));
+                return ret;
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Failed to fetch sales return by id", e);
         }
         return null;
     }
 
-    /**
-     * Fetch items for a specific return
-     */
-    public java.util.List<SalesReturnItem> findItemsByReturnId(Long returnId) {
-        java.util.List<SalesReturnItem> items = new java.util.ArrayList<>();
-        String sql = """
-                SELECT sri.id, sri.sales_return_id, sri.sale_item_id, sri.product_id, sri.quantity, sri.unit_price,
-                       sri.hpp_per_unit, sri.subtotal, p.sku, p.name
-                FROM sales_return_items sri
-                LEFT JOIN products p ON sri.product_id = p.id
-                WHERE sri.sales_return_id = ?
-                """;
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, returnId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    SalesReturnItem item = new SalesReturnItem();
-                    item.setId(rs.getLong("id"));
-                    item.setSalesReturnId(rs.getLong("sales_return_id"));
-                    item.setSaleItemId(rs.getLong("sale_item_id"));
-                    item.setProductId(rs.getLong("product_id"));
-                    item.setQtyReturn(rs.getInt("quantity"));
-                    item.setUnitPrice(rs.getBigDecimal("unit_price"));
-                    item.setSnapshotHpp(rs.getBigDecimal("hpp_per_unit"));
-                    item.setLineTotal(rs.getBigDecimal("subtotal"));
-                    item.setProductSku(rs.getString("sku"));
-                    item.setProductName(rs.getString("name"));
-                    items.add(item);
-                }
+    public List<SalesReturnItem> findItemsByReturnId(Long returnId) {
+        List<SalesReturnItem> items = new ArrayList<>();
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            ApiFuture<QuerySnapshot> future = db.collection(ITEMS_COL)
+                    .whereEqualTo("sales_return_id", returnId)
+                    .get();
+
+            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+                SalesReturnItem item = new SalesReturnItem();
+                item.setId(doc.getLong("id"));
+                item.setSalesReturnId(doc.getLong("sales_return_id"));
+                item.setSaleItemId(doc.getLong("sale_item_id"));
+                item.setProductId(doc.getLong("product_id"));
+                
+                Long qty = doc.getLong("quantity");
+                item.setQtyReturn(qty != null ? qty.intValue() : 0);
+                
+                Double unitPrice = doc.getDouble("unit_price");
+                item.setUnitPrice(unitPrice != null ? BigDecimal.valueOf(unitPrice) : BigDecimal.ZERO);
+                
+                Double hpp = doc.getDouble("hpp_per_unit");
+                item.setSnapshotHpp(hpp != null ? BigDecimal.valueOf(hpp) : BigDecimal.ZERO);
+                
+                Double subtotal = doc.getDouble("subtotal");
+                item.setLineTotal(subtotal != null ? BigDecimal.valueOf(subtotal) : BigDecimal.ZERO);
+                
+                item.setProductSku(doc.getString("product_sku"));
+                item.setProductName(doc.getString("product_name"));
+                
+                items.add(item);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Failed to fetch return items", e);
         }
         return items;
+    }
+
+    // Mapping logic -----------------------------------------------------------
+
+    private Map<String, Object> returnToMap(SalesReturn ret) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", ret.getId());
+        map.put("return_number", ret.getReturnNo());
+        map.put("sale_id", ret.getSaleId());
+        
+        // Denormalize sale invoice
+        if (ret.getSaleId() != null) {
+            try {
+                DocumentSnapshot saleDoc = FirestoreHelper.getDb().collection("sales").document(String.valueOf(ret.getSaleId())).get().get();
+                if (saleDoc.exists()) {
+                    map.put("invoice_number", saleDoc.getString("invoice_number"));
+                }
+            } catch (Exception ignored) {}
+        }
+        
+        map.put("created_at", LocalDateTime.now().format(DB_DATE_FMT));
+        map.put("reason", ret.getNotes());
+        map.put("total_amount", ret.getTotalAmount() != null ? ret.getTotalAmount().doubleValue() : 0.0);
+        map.put("status", "COMPLETED");
+        map.put("created_by", ret.getUserId());
+        
+        if (ret.getUserId() != null) {
+            try {
+                DocumentSnapshot userDoc = FirestoreHelper.getDb().collection("users").document(String.valueOf(ret.getUserId())).get().get();
+                if (userDoc.exists()) {
+                    map.put("user_name", userDoc.getString("full_name"));
+                }
+            } catch (Exception ignored) {}
+        }
+        
+        return map;
+    }
+
+    private Map<String, Object> returnItemToMap(SalesReturnItem item) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", item.getId());
+        map.put("sales_return_id", item.getSalesReturnId());
+        map.put("sale_item_id", item.getSaleItemId());
+        map.put("product_id", item.getProductId());
+        
+        // Denormalize product
+        if (item.getProductId() != null) {
+            try {
+                DocumentSnapshot prodDoc = FirestoreHelper.getDb().collection("products").document(String.valueOf(item.getProductId())).get().get();
+                if (prodDoc.exists()) {
+                    map.put("product_sku", prodDoc.getString("sku"));
+                    map.put("product_name", prodDoc.getString("name"));
+                }
+            } catch (Exception ignored) {}
+        }
+        
+        map.put("quantity", item.getQtyReturn());
+        map.put("unit_price", item.getUnitPrice() != null ? item.getUnitPrice().doubleValue() : 0.0);
+        map.put("hpp_per_unit", item.getSnapshotHpp() != null ? item.getSnapshotHpp().doubleValue() : 0.0);
+        map.put("subtotal", item.getLineTotal() != null ? item.getLineTotal().doubleValue() : 0.0);
+        
+        return map;
+    }
+
+    private SalesReturn mapDocumentToReturn(DocumentSnapshot doc) {
+        SalesReturn ret = new SalesReturn();
+        ret.setId(doc.getLong("id"));
+        ret.setReturnNo(doc.getString("return_number"));
+        ret.setSaleId(doc.getLong("sale_id"));
+        
+        String createdAt = doc.getString("created_at");
+        if (createdAt != null) {
+            ret.setCreatedAt(LocalDateTime.parse(createdAt, DB_DATE_FMT));
+        }
+        
+        ret.setNotes(doc.getString("reason"));
+        
+        Double total = doc.getDouble("total_amount");
+        ret.setTotalAmount(total != null ? BigDecimal.valueOf(total) : BigDecimal.ZERO);
+        
+        ret.setSaleInvoiceNumber(doc.getString("invoice_number"));
+        ret.setUserId(doc.getLong("created_by"));
+        ret.setCreatedByName(doc.getString("user_name"));
+        
+        return ret;
+    }
+
+    private Map<String, Object> stockMovementToMap(StockMovement sm) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", sm.getId());
+        map.put("product_id", sm.getProductId());
+        map.put("movement_type", sm.getMovementType() != null ? sm.getMovementType().name() : null);
+        map.put("reference_type", sm.getReferenceType());
+        map.put("reference_id", sm.getReferenceId());
+        map.put("quantity_change", sm.getQuantityChange());
+        map.put("notes", sm.getNotes());
+        map.put("created_by", sm.getCreatedBy());
+        map.put("created_at", LocalDateTime.now().format(DB_DATE_FMT));
+        return map;
     }
 }
 

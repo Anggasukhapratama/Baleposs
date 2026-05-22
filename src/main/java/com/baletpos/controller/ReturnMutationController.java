@@ -39,7 +39,7 @@ import java.util.Locale;
 public class ReturnMutationController {
     private static final Logger logger = LoggerFactory.getLogger(ReturnMutationController.class);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     // === Tab Retur Fields ===
     @FXML

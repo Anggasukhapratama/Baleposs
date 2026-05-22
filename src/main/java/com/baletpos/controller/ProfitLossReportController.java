@@ -63,7 +63,7 @@ public class ProfitLossReportController {
     private Label netMarginLabel;
 
     private final ReportDAO reportDAO = new ReportDAO();
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.of("id", "ID"));
+    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
     private ReportRow currentReport;
 
     @FXML
