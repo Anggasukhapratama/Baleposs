@@ -114,22 +114,22 @@ const PaginationControl = ({
   };
 
   return (
-    <div className="p-6 bg-gradient-to-r from-slate-50 to-blue-50/30 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-3xl">
-      <div className="text-sm text-slate-600 font-medium">
-        Menampilkan <span className="text-slate-900 font-bold">{startIdx} - {endIdx}</span> dari <span className="text-slate-900 font-bold">{totalItems}</span> data
+    <div className="p-4 border-t border-slate-800/60 bg-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="text-xs text-slate-400 font-semibold">
+        Menampilkan <span className="text-slate-200 font-bold">{startIdx} - {endIdx}</span> dari <span className="text-slate-200 font-bold">{totalItems}</span> data
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-slate-200 text-slate-700 transition-all duration-200"
+          className="p-2 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-slate-300 transition cursor-pointer"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
         {getPageNumbers().map((p, idx) => {
           if (p === "...") {
             return (
-              <span key={idx} className="px-4 py-2 text-sm font-medium text-slate-500">
+              <span key={idx} className="px-3 py-1.5 text-xs font-bold text-slate-600">
                 ...
               </span>
             );
@@ -139,10 +139,10 @@ const PaginationControl = ({
             <button
               key={idx}
               onClick={() => onPageChange(p as number)}
-              className={`px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                 isSelected
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
-                  : "bg-white text-slate-600 shadow-sm border border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-slate-900"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/10"
+                  : "border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
               }`}
             >
               {p}
@@ -152,9 +152,9 @@ const PaginationControl = ({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-slate-200 text-slate-700 transition-all duration-200"
+          className="p-2 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-slate-300 transition cursor-pointer"
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -494,7 +494,7 @@ export default function Home() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="bg-white border border-slate-200 p-10 rounded-lg w-full max-w-md shadow-sm">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-slate-900 mb-4">
+            <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white mb-4">
               <Scale size={28} />
             </div>
             <h1 className="text-2xl font-semibold text-slate-900 mb-1">BaletPOS Admin</h1>
@@ -564,22 +564,22 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       
       {/* Mobile Header Bar */}
-      <div className="md:hidden bg-white border-b border-slate-300 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden bg-slate-900 border-b border-slate-800/60 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-blue-600/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-500">
             <Scale size={20} />
           </div>
           <div>
-            <h1 className="text-sm font-black text-slate-900 leading-tight">BaletPOS</h1>
-            <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">Finance Admin</p>
+            <h1 className="text-sm font-black text-white leading-tight">BaletPOS</h1>
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Finance Admin</p>
           </div>
         </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 text-slate-600 hover:text-slate-900"
+          className="p-2 text-slate-400 hover:text-white"
         >
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -587,17 +587,17 @@ export default function Home() {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-300 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800/60 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-6 border-b border-slate-300 flex items-center gap-3 shrink-0">
+        <div className="p-6 border-b border-slate-800/60 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 bg-blue-600/10 border border-blue-500/20 rounded-xl flex items-center justify-center text-blue-500 shrink-0">
             <Scale size={22} />
           </div>
           <div>
-            <h1 className="text-base font-black text-slate-900 leading-tight">BaletPOS</h1>
-            <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">Finance Admin</p>
+            <h1 className="text-base font-black text-white leading-tight">BaletPOS</h1>
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Finance Admin</p>
           </div>
         </div>
 
@@ -614,7 +614,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "dashboard"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <LayoutDashboard size={18} />
@@ -632,7 +632,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "products"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <Package size={18} />
@@ -643,7 +643,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "stock"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <ClipboardList size={18} />
@@ -654,7 +654,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "suppliers"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <Users size={18} />
@@ -672,7 +672,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "sales"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <ShoppingCart size={18} />
@@ -683,7 +683,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "purchases"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <ShoppingCart size={18} />
@@ -694,7 +694,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "expenses"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <DollarSign size={18} />
@@ -705,7 +705,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "returns"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <ArrowLeftRight size={18} />
@@ -723,7 +723,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "profit"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <FileText size={18} />
@@ -734,7 +734,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "reconcile"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <Scale size={18} />
@@ -745,7 +745,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "transactions"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <ArrowLeftRight size={18} />
@@ -763,7 +763,7 @@ export default function Home() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeView === "settings"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
-                  : "text-slate-600 hover:bg-blue-100 hover:text-slate-900"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
               <Settings size={18} />
@@ -774,18 +774,18 @@ export default function Home() {
         </nav>
 
         {/* Sidebar Footer with Session details */}
-        <div className="p-6 border-t border-slate-300 space-y-4 shrink-0 bg-white">
+        <div className="p-6 border-t border-slate-800/60 space-y-4 shrink-0 bg-slate-900/60">
           <div>
-            <span className="text-[10px] text-slate-600 font-extrabold uppercase tracking-wide">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">
               Role Aktif
             </span>
-            <span className="block text-sm text-slate-900 font-bold leading-snug">
+            <span className="block text-sm text-white font-bold leading-snug">
               {user?.fullName || "Admin Keuangan"}
             </span>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-300 hover:bg-blue-100 rounded-xl text-xs font-bold text-rose-500 cursor-pointer transition"
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs font-bold text-rose-500 cursor-pointer transition"
           >
             <LogOut size={14} />
             <span>Keluar</span>
@@ -797,12 +797,12 @@ export default function Home() {
       <main className="flex-1 flex flex-col min-w-0">
         
         {/* Workspace Topbar Header */}
-        <header className="bg-white border-b border-slate-300 px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sticky top-0 z-30">
+        <header className="bg-slate-900 border-b border-slate-800/60 px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sticky top-0 z-30">
           <div>
             <span className="text-[10px] text-blue-400 font-black uppercase tracking-wider">
               Monitoring Laporan
             </span>
-            <h2 className="text-xl font-black text-slate-900">
+            <h2 className="text-xl font-black text-white">
               {activeView === "dashboard" && "Dashboard Keuangan"}
               {activeView === "products" && "Manajemen Produk"}
               {activeView === "purchases" && "Riwayat Pembelian"}
@@ -822,13 +822,13 @@ export default function Home() {
             {/* Global Search Filter (only for relevant views like dashboard) */}
             {activeView === "dashboard" && (
               <div className="relative shrink-0 w-full sm:w-64">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari invoice, metode bayar..."
-                  className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"
                 />
               </div>
             )}
@@ -836,11 +836,11 @@ export default function Home() {
             {/* Global Period Select (for dashboard, purchases, sales, expenses, profit) */}
             {["dashboard", "purchases", "sales", "expenses", "profit"].includes(activeView) && (
               <div className="relative">
-                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <select
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
-                  className="bg-white border border-slate-300 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer"
+                  className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer"
                 >
                   <option value="all">Semua Data</option>
                   <option value="today">Hari Ini</option>
@@ -854,7 +854,7 @@ export default function Home() {
             <button
               onClick={() => fetchData()}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 hover:bg-blue-100 rounded-xl text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               <span className="hidden sm:inline">Refresh</span>
@@ -890,7 +890,7 @@ export default function Home() {
           {loading && !dashboardData.payments.length && (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
               <Loader2 className="animate-spin text-blue-500" size={32} />
-              <span className="text-sm text-slate-600 font-semibold">Memuat Data Keuangan...</span>
+              <span className="text-sm text-slate-400 font-semibold">Memuat Data Keuangan...</span>
             </div>
           )}
 
@@ -911,16 +911,16 @@ export default function Home() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     
                     {/* Card 1: Omzet Bersih */}
-                    <div className="bg-white border border-slate-300 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/5 group cursor-pointer">
+                    <div className="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/5 group cursor-pointer">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
                           Omzet Bersih
                         </span>
                         <div className="w-7 h-7 bg-blue-600/10 border border-blue-500/10 rounded-lg flex items-center justify-center text-blue-400">
                           <TrendingUp size={14} />
                         </div>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-400 transition-colors">
+                      <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors">
                         {formatCurrency(Number(dashboardData.summary?.net_revenue || 0))}
                       </h3>
                       {period !== "all" && (
@@ -936,9 +936,9 @@ export default function Home() {
                     </div>
 
                     {/* Card 2: Gross Profit */}
-                    <div className="bg-white border border-slate-300 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-teal-500/5 group cursor-pointer">
+                    <div className="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-teal-500/5 group cursor-pointer">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
                           Gross Profit (Laba Kotor)
                         </span>
                         <div className="w-7 h-7 bg-teal-600/10 border border-teal-500/10 rounded-lg flex items-center justify-center text-teal-400">
@@ -947,7 +947,7 @@ export default function Home() {
                       </div>
                       <h3 className={`text-2xl font-black transition-colors ${
                         Number(dashboardData.summary?.gross_profit || 0) >= 0
-                          ? "text-slate-900 group-hover:text-emerald-400"
+                          ? "text-white group-hover:text-emerald-400"
                           : "text-rose-500"
                       }`}>
                         {formatCurrency(Number(dashboardData.summary?.gross_profit || 0))}
@@ -965,16 +965,16 @@ export default function Home() {
                     </div>
 
                     {/* Card 3: Biaya Operasional */}
-                    <div className="bg-white border border-slate-300 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5 group cursor-pointer">
+                    <div className="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5 group cursor-pointer">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
                           Biaya Operasional
                         </span>
                         <div className="w-7 h-7 bg-amber-600/10 border border-amber-500/10 rounded-lg flex items-center justify-center text-amber-400">
                           <TrendingDown size={14} />
                         </div>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 group-hover:text-amber-400 transition-colors">
+                      <h3 className="text-2xl font-black text-white group-hover:text-amber-400 transition-colors">
                         {formatCurrency(Number(dashboardData.summary?.expenses || 0))}
                       </h3>
                       {period !== "all" && (
@@ -990,9 +990,9 @@ export default function Home() {
                     </div>
 
                     {/* Card 4: Laba Bersih */}
-                    <div className="bg-white border border-slate-300 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 group cursor-pointer">
+                    <div className="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 group cursor-pointer">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
                           Laba Bersih
                         </span>
                         <div className="w-7 h-7 bg-indigo-600/10 border border-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-400">
@@ -1001,7 +1001,7 @@ export default function Home() {
                       </div>
                       <h3 className={`text-2xl font-black transition-colors ${
                         Number(dashboardData.summary?.net_profit || 0) >= 0
-                          ? "text-slate-900 group-hover:text-emerald-400"
+                          ? "text-white group-hover:text-emerald-400"
                           : "text-rose-500"
                       }`}>
                         {formatCurrency(Number(dashboardData.summary?.net_profit || 0))}
@@ -1024,13 +1024,13 @@ export default function Home() {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     {/* Chart Panel (Chronological X-axis sorting fixed) */}
-                    <div className="lg:col-span-2 bg-white border border-slate-300 rounded-2xl overflow-hidden flex flex-col h-[400px]">
-                      <div className="p-5 border-b border-slate-300 flex items-center justify-between shrink-0 bg-white">
+                    <div className="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden flex flex-col h-[400px]">
+                      <div className="p-5 border-b border-slate-800/60 flex items-center justify-between shrink-0 bg-slate-900/60">
                         <div>
-                          <h3 className="text-base font-bold text-slate-900">Tren Kas Masuk</h3>
-                          <p className="text-xs text-slate-600">Omzet dan laba kotor tujuh hari terakhir secara kronologis</p>
+                          <h3 className="text-base font-bold text-white">Tren Kas Masuk</h3>
+                          <p className="text-xs text-slate-400">Omzet dan laba kotor tujuh hari terakhir secara kronologis</p>
                         </div>
-                        <div className="flex gap-4 text-xs font-semibold text-slate-600">
+                        <div className="flex gap-4 text-xs font-semibold text-slate-400">
                           <span className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 bg-blue-600 rounded-full"></span> Omzet
                           </span>
@@ -1044,13 +1044,13 @@ export default function Home() {
                         {dashboardData.trend && dashboardData.trend.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={dashboardData.trend} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                               <XAxis dataKey="day" stroke="#64748b" fontSize={11} fontWeight={600} />
                               <YAxis stroke="#64748b" fontSize={11} fontWeight={600} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
                               <Tooltip
-                                contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px" }}
+                                contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "12px" }}
                                 formatter={(value: any, name: any) => [formatCurrency(Number(value)), name === "revenue" ? "Omzet" : "Laba"]}
-                                labelStyle={{ color: "#475569", fontWeight: 700 }}
+                                labelStyle={{ color: "#94a3b8", fontWeight: 700 }}
                               />
                               <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={30} />
                               <Bar dataKey="profit" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={30} />
@@ -1065,10 +1065,10 @@ export default function Home() {
                     </div>
 
                     {/* Payment Contribution Panel (percentage sum fixed) */}
-                    <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden flex flex-col h-[400px]">
-                      <div className="p-5 border-b border-slate-300 shrink-0 bg-white">
-                        <h3 className="text-base font-bold text-slate-900">Metode Pembayaran</h3>
-                        <p className="text-xs text-slate-600">Kontribusi transaksi dari yang tertinggi ke terendah</p>
+                    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden flex flex-col h-[400px]">
+                      <div className="p-5 border-b border-slate-800/60 shrink-0 bg-slate-900/60">
+                        <h3 className="text-base font-bold text-white">Metode Pembayaran</h3>
+                        <p className="text-xs text-slate-400">Kontribusi transaksi dari yang tertinggi ke terendah</p>
                       </div>
 
                       <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -1080,15 +1080,15 @@ export default function Home() {
                             return (
                               <div key={idx} className="space-y-1.5">
                                 <div className="flex justify-between text-xs font-bold">
-                                  <span className="text-slate-700 uppercase tracking-wide">{item.name}</span>
+                                  <span className="text-slate-300 uppercase tracking-wide">{item.name}</span>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-slate-600">{formatCurrency(Number(item.amount))}</span>
+                                    <span className="text-slate-400">{formatCurrency(Number(item.amount))}</span>
                                     <span className="px-1.5 py-0.5 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-md text-[10px]">
                                       {contribPercent}%
                                     </span>
                                   </div>
                                 </div>
-                                <div className="h-2 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
+                                <div className="h-2 bg-slate-950 border border-slate-800/40 rounded-full overflow-hidden">
                                   <div
                                     className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full"
                                     style={{ width: `${contribPercent}%` }}
@@ -1111,38 +1111,38 @@ export default function Home() {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     {/* Recent Transaction Panel (time relative fixed) */}
-                    <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg shadow-slate-200/50 overflow-hidden">
-                      <div className="p-6 bg-gradient-to-r from-slate-50 to-blue-50/30">
-                        <h3 className="text-lg font-bold text-slate-900">Transaksi Terbaru</h3>
-                        <p className="text-sm text-slate-600 mt-1">Data live dari kasir yang masuk ke laporan keuangan</p>
+                    <div className="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden flex flex-col">
+                      <div className="p-5 border-b border-slate-800/60 shrink-0 bg-slate-900/60">
+                        <h3 className="text-base font-bold text-white">Transaksi Terbaru</h3>
+                        <p className="text-xs text-slate-400">Data live dari kasir yang masuk ke laporan keuangan</p>
                       </div>
 
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-xs border-collapse">
                           <thead>
-                            <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                              <th className="px-6 py-4 font-semibold text-white rounded-tl-xl">INVOICE</th>
-                              <th className="px-6 py-4 font-semibold text-white">WAKTU</th>
-                              <th className="px-6 py-4 font-semibold text-white">METODE</th>
-                              <th className="px-6 py-4 font-semibold text-white text-right">TOTAL</th>
-                              <th className="px-6 py-4 font-semibold text-white rounded-tr-xl">STATUS</th>
+                            <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                              <th className="p-4 font-bold text-slate-400">INVOICE</th>
+                              <th className="p-4 font-bold text-slate-400">WAKTU</th>
+                              <th className="p-4 font-bold text-slate-400">METODE</th>
+                              <th className="p-4 font-bold text-slate-400 text-right">TOTAL</th>
+                              <th className="p-4 font-bold text-slate-400">STATUS</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-800/50">
                             {dashboardData.transactions && dashboardData.transactions.length > 0 ? (
                               dashboardData.transactions.map((tx: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 border-b border-slate-100 last:border-b-0">
-                                  <td className="px-6 py-4 font-bold text-slate-900">{tx.invoice}</td>
-                                  <td className="px-6 py-4 font-medium text-slate-600">
+                                <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                  <td className="p-4 font-bold text-slate-200">{tx.invoice}</td>
+                                  <td className="p-4 font-semibold text-slate-400">
                                     {formatRelativeTime(tx.time)}
                                   </td>
-                                  <td className="px-6 py-4 font-bold text-slate-700 uppercase tracking-wide">{tx.method}</td>
-                                  <td className="px-6 py-4 font-bold text-slate-900 text-right">{formatCurrency(Number(tx.total))}</td>
-                                  <td className="px-6 py-4">
-                                    <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase ${
+                                  <td className="p-4 font-bold text-slate-300 uppercase tracking-wide">{tx.method}</td>
+                                  <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(tx.total))}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
                                       tx.status === "COMPLETED"
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "bg-amber-100 text-amber-700"
+                                        ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                        : "bg-amber-500/10 border border-amber-500/20 text-amber-400"
                                     }`}>
                                       {tx.status}
                                     </span>
@@ -1151,11 +1151,8 @@ export default function Home() {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                                  <div className="flex flex-col items-center gap-3">
-                                    <ShoppingCart className="w-12 h-12 text-slate-300" />
-                                    <span>Belum ada transaksi terekam.</span>
-                                  </div>
+                                <td colSpan={5} className="p-8 text-center text-slate-500 font-semibold">
+                                  Belum ada transaksi terekam.
                                 </td>
                               </tr>
                             )}
@@ -1165,19 +1162,19 @@ export default function Home() {
                     </div>
 
                     {/* Expense Approval Panel */}
-                    <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden flex flex-col">
-                      <div className="p-5 border-b border-slate-300 shrink-0 bg-white/60">
-                        <h3 className="text-base font-bold text-slate-900">Approval Biaya</h3>
-                        <p className="text-xs text-slate-600">Menunggu validasi & otorisasi dari Anda</p>
+                    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden flex flex-col">
+                      <div className="p-5 border-b border-slate-800/60 shrink-0 bg-slate-900/60">
+                        <h3 className="text-base font-bold text-white">Approval Biaya</h3>
+                        <p className="text-xs text-slate-400">Menunggu validasi & otorisasi dari Anda</p>
                       </div>
 
-                      <div className="divide-y divide-slate-200 overflow-y-auto">
+                      <div className="divide-y divide-slate-800/40 overflow-y-auto">
                         {dashboardData.approvals && dashboardData.approvals.length > 0 ? (
                           dashboardData.approvals.map((appr: any, idx: number) => (
-                            <div key={idx} className="p-4 hover:bg-blue-50 transition flex items-center justify-between gap-3">
+                            <div key={idx} className="p-4 hover:bg-slate-800/20 transition flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <strong className="block text-xs font-bold text-slate-900 truncate">{appr.title}</strong>
-                                <span className="block text-[11px] text-slate-600 font-medium truncate mt-0.5">{appr.meta}</span>
+                                <strong className="block text-xs font-bold text-slate-200 truncate">{appr.title}</strong>
+                                <span className="block text-[11px] text-slate-400 font-medium truncate mt-0.5">{appr.meta}</span>
                               </div>
                               <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-md text-[9px] font-black uppercase tracking-wider">
                                 {appr.status}
@@ -1202,42 +1199,39 @@ export default function Home() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   
                   {/* Products Table */}
-                  <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg shadow-slate-200/50 overflow-hidden">
-                    <div className="p-6 bg-gradient-to-r from-slate-50 to-blue-50/30">
-                      <h3 className="text-lg font-bold text-slate-900">Daftar Produk</h3>
-                      <p className="text-sm text-slate-600 mt-1">Data tipe laptop, spareparts, dan aksesoris</p>
+                  <div className="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                      <h3 className="text-base font-bold text-white">Daftar Produk</h3>
+                      <p className="text-xs text-slate-400">Data tipe laptop, spareparts, dan aksesoris</p>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                            <th className="px-6 py-4 font-semibold text-white rounded-tl-xl">SKU</th>
-                            <th className="px-6 py-4 font-semibold text-white">PRODUK</th>
-                            <th className="px-6 py-4 font-semibold text-white">TIPE</th>
-                            <th className="px-6 py-4 font-semibold text-white text-right">STOK</th>
-                            <th className="px-6 py-4 font-semibold text-white text-right rounded-tr-xl">HARGA JUAL</th>
+                          <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                            <th className="p-4 font-bold text-slate-400">SKU</th>
+                            <th className="p-4 font-bold text-slate-400">PRODUK</th>
+                            <th className="p-4 font-bold text-slate-400">TIPE</th>
+                            <th className="p-4 font-bold text-slate-400 text-right">STOK</th>
+                            <th className="p-4 font-bold text-slate-400 text-right">HARGA JUAL</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-800/50">
                           {products.length > 0 ? (
                             products
                               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                               .map((p: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 border-b border-slate-100 last:border-b-0">
-                                  <td className="px-6 py-4 font-bold text-slate-900">{p.sku}</td>
-                                  <td className="px-6 py-4 font-bold text-slate-900">{p.name}</td>
-                                  <td className="px-6 py-4 font-medium text-slate-600 uppercase tracking-wider">{p.type}</td>
-                                  <td className="px-6 py-4 font-bold text-slate-900 text-right">{p.stock}</td>
-                                  <td className="px-6 py-4 font-bold text-slate-900 text-right">{formatCurrency(Number(p.selling_price))}</td>
+                                <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                  <td className="p-4 font-bold text-slate-200">{p.sku}</td>
+                                  <td className="p-4 font-bold text-slate-200">{p.name}</td>
+                                  <td className="p-4 font-semibold text-slate-400 uppercase tracking-wider">{p.type}</td>
+                                  <td className="p-4 font-bold text-slate-200 text-right">{p.stock}</td>
+                                  <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(p.selling_price))}</td>
                                 </tr>
                               ))
                           ) : (
                             <tr>
-                              <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                                <div className="flex flex-col items-center gap-3">
-                                  <Package className="w-12 h-12 text-slate-300" />
-                                  <span>Belum ada produk terdaftar.</span>
-                                </div>
+                              <td colSpan={5} className="p-8 text-center text-slate-500 font-semibold">
+                                Belum ada produk terdaftar.
                               </td>
                             </tr>
                           )}
@@ -1253,39 +1247,39 @@ export default function Home() {
                   </div>
 
                   {/* Add Product Form */}
-                  <div className="bg-white rounded-3xl shadow-lg shadow-slate-200/50 p-6 space-y-5">
-                    <div className="pb-4 border-b border-slate-100">
-                      <h3 className="text-lg font-bold text-slate-900">Tambah Produk</h3>
-                      <p className="text-sm text-slate-600 mt-1">Form input cepat admin web</p>
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden p-5 space-y-4">
+                    <div>
+                      <h3 className="text-base font-bold text-white">Tambah Produk</h3>
+                      <p className="text-xs text-slate-400">Form input cepat admin web</p>
                     </div>
 
-                    <form onSubmit={handleAddProduct} className="space-y-4">
+                    <form onSubmit={handleAddProduct} className="space-y-3.5">
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">SKU</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">SKU</label>
                         <input
                           type="text"
                           required
                           value={newProdSku}
                           onChange={(e) => setNewProdSku(e.target.value)}
-                          className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Produk</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Nama Produk</label>
                         <input
                           type="text"
                           required
                           value={newProdName}
                           onChange={(e) => setNewProdName(e.target.value)}
-                          className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Tipe Produk</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Tipe Produk</label>
                         <select
                           value={newProdType}
                           onChange={(e) => setNewProdType(e.target.value)}
-                          className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 cursor-pointer"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition cursor-pointer"
                         >
                           <option value="LAPTOP_NEW">Laptop Baru</option>
                           <option value="LAPTOP_SECOND">Laptop Second</option>
@@ -1295,45 +1289,45 @@ export default function Home() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">HPP</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">HPP</label>
                         <input
                           type="number"
                           required
                           min={0}
                           value={newProdHpp}
                           onChange={(e) => setNewProdHpp(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Harga Jual</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Harga Jual</label>
                         <input
                           type="number"
                           required
                           min={0}
                           value={newProdPrice}
                           onChange={(e) => setNewProdPrice(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Stok Awal</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Stok Awal</label>
                         <input
                           type="number"
                           required
                           min={0}
                           value={newProdStock}
                           onChange={(e) => setNewProdStock(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
 
                       <button
                         type="submit"
                         disabled={isSaving}
-                        className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
                       >
-                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                        {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         Simpan Produk
                       </button>
                     </form>
@@ -1344,32 +1338,32 @@ export default function Home() {
 
               {/* -------------------- VIEW: PURCHASES -------------------- */}
               {activeView === "purchases" && (
-                <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
-                  <div className="p-5 border-b border-slate-300 bg-white/60">
-                    <h3 className="text-base font-bold text-slate-900">Pembelian (PO)</h3>
-                    <p className="text-xs text-slate-600">Riwayat pengadaan stok barang supplier</p>
+                <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                  <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                    <h3 className="text-base font-bold text-white">Pembelian (PO)</h3>
+                    <p className="text-xs text-slate-400">Riwayat pengadaan stok barang supplier</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                          <th className="p-4 font-bold text-white">NO PEMBELIAN</th>
-                          <th className="p-4 font-bold text-white">TANGGAL</th>
-                          <th className="p-4 font-bold text-white">SUPPLIER</th>
-                          <th className="p-4 font-bold text-white text-right">TOTAL</th>
-                          <th className="p-4 font-bold text-white">STATUS</th>
+                        <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                          <th className="p-4 font-bold text-slate-400">NO PEMBELIAN</th>
+                          <th className="p-4 font-bold text-slate-400">TANGGAL</th>
+                          <th className="p-4 font-bold text-slate-400">SUPPLIER</th>
+                          <th className="p-4 font-bold text-slate-400 text-right">TOTAL</th>
+                          <th className="p-4 font-bold text-slate-400">STATUS</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
+                      <tbody className="divide-y divide-slate-800/50">
                         {purchases.length > 0 ? (
                           purchases
                             .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                             .map((po: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-blue-50 transition">
-                                <td className="p-4 font-bold text-slate-900">{po.number}</td>
-                                <td className="p-4 font-semibold text-slate-600">{new Date(po.date).toLocaleDateString("id-ID")}</td>
-                                <td className="p-4 font-bold text-slate-900">{po.supplier}</td>
-                                <td className="p-4 font-bold text-slate-900 text-right">{formatCurrency(Number(po.total))}</td>
+                              <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                <td className="p-4 font-bold text-slate-200">{po.number}</td>
+                                <td className="p-4 font-semibold text-slate-400">{new Date(po.date).toLocaleDateString("id-ID")}</td>
+                                <td className="p-4 font-bold text-slate-200">{po.supplier}</td>
+                                <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(po.total))}</td>
                                 <td className="p-4">
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
                                   po.status === "COMPLETED"
@@ -1405,42 +1399,39 @@ export default function Home() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   
                   {/* Suppliers List */}
-                  <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg shadow-slate-200/50 overflow-hidden">
-                    <div className="p-6 bg-gradient-to-r from-slate-50 to-blue-50/30">
-                      <h3 className="text-lg font-bold text-slate-900">Database Supplier</h3>
-                      <p className="text-sm text-slate-600 mt-1">Daftar supplier aktif terhubung database desktop</p>
+                  <div className="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                      <h3 className="text-base font-bold text-white">Database Supplier</h3>
+                      <p className="text-xs text-slate-400">Daftar supplier aktif terhubung database desktop</p>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                            <th className="px-6 py-4 font-semibold text-white rounded-tl-xl">KODE</th>
-                            <th className="px-6 py-4 font-semibold text-white">NAMA</th>
-                            <th className="px-6 py-4 font-semibold text-white">CONTACT PERSON</th>
-                            <th className="px-6 py-4 font-semibold text-white">TELEPON</th>
-                            <th className="px-6 py-4 font-semibold text-white rounded-tr-xl">EMAIL</th>
+                          <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                            <th className="p-4 font-bold text-slate-400">KODE</th>
+                            <th className="p-4 font-bold text-slate-400">NAMA</th>
+                            <th className="p-4 font-bold text-slate-400">CONTACT PERSON</th>
+                            <th className="p-4 font-bold text-slate-400">TELEPON</th>
+                            <th className="p-4 font-bold text-slate-400">EMAIL</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-800/50">
                           {suppliers.length > 0 ? (
                             suppliers
                               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                               .map((s: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 border-b border-slate-100 last:border-b-0">
-                                  <td className="px-6 py-4 font-bold text-slate-900">{s.code}</td>
-                                  <td className="px-6 py-4 font-bold text-slate-900">{s.name}</td>
-                                  <td className="px-6 py-4 font-medium text-slate-600">{s.contact || "-"}</td>
-                                  <td className="px-6 py-4 font-medium text-slate-600">{s.phone || "-"}</td>
-                                  <td className="px-6 py-4 font-medium text-slate-600">{s.email || "-"}</td>
+                                <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                  <td className="p-4 font-bold text-slate-200">{s.code}</td>
+                                  <td className="p-4 font-bold text-slate-200">{s.name}</td>
+                                  <td className="p-4 font-semibold text-slate-400">{s.contact || "-"}</td>
+                                  <td className="p-4 font-semibold text-slate-400">{s.phone || "-"}</td>
+                                  <td className="p-4 font-semibold text-slate-400">{s.email || "-"}</td>
                                 </tr>
                               ))
                           ) : (
                             <tr>
-                              <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                                <div className="flex flex-col items-center gap-3">
-                                  <Users className="w-12 h-12 text-slate-300" />
-                                  <span>Belum ada supplier terdaftar.</span>
-                                </div>
+                              <td colSpan={5} className="p-8 text-center text-slate-500 font-semibold">
+                                Belum ada supplier terdaftar.
                               </td>
                             </tr>
                           )}
@@ -1456,74 +1447,74 @@ export default function Home() {
                   </div>
 
                   {/* Add Supplier Form */}
-                  <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden p-5 space-y-4">
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden p-5 space-y-4">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Tambah Supplier</h3>
-                      <p className="text-xs text-slate-600">Masukkan kontak supplier baru</p>
+                      <h3 className="text-base font-bold text-white">Tambah Supplier</h3>
+                      <p className="text-xs text-slate-400">Masukkan kontak supplier baru</p>
                     </div>
 
                     <form onSubmit={handleAddSupplier} className="space-y-3.5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Kode Supplier</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Kode Supplier</label>
                         <input
                           type="text"
                           required
                           value={newSupCode}
                           onChange={(e) => setNewSupCode(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Nama Supplier</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Nama Supplier</label>
                         <input
                           type="text"
                           required
                           value={newSupName}
                           onChange={(e) => setNewSupName(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Contact Person</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Contact Person</label>
                         <input
                           type="text"
                           value={newSupContact}
                           onChange={(e) => setNewSupContact(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Telepon</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Telepon</label>
                         <input
                           type="text"
                           value={newSupPhone}
                           onChange={(e) => setNewSupPhone(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Email</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Email</label>
                         <input
                           type="email"
                           value={newSupEmail}
                           onChange={(e) => setNewSupEmail(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Alamat</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">Alamat</label>
                         <textarea
                           rows={3}
                           value={newSupAddress}
                           onChange={(e) => setNewSupAddress(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
                         ></textarea>
                       </div>
 
                       <button
                         type="submit"
                         disabled={isSaving}
-                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-slate-900 font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
                       >
                         {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         Simpan Supplier
@@ -1539,30 +1530,30 @@ export default function Home() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                   
                   {/* Sales Return Table */}
-                  <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
-                    <div className="p-5 border-b border-slate-300 bg-white/60">
-                      <h3 className="text-base font-bold text-slate-900">Retur Penjualan</h3>
-                      <p className="text-xs text-slate-600">Riwayat klaim retur barang dari pelanggan</p>
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                      <h3 className="text-base font-bold text-white">Retur Penjualan</h3>
+                      <p className="text-xs text-slate-400">Riwayat klaim retur barang dari pelanggan</p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                            <th className="p-4 font-bold text-white">NO RETUR</th>
-                            <th className="p-4 font-bold text-white">INVOICE</th>
-                            <th className="p-4 font-bold text-white text-right">TOTAL</th>
-                            <th className="p-4 font-bold text-white">STATUS</th>
+                          <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                            <th className="p-4 font-bold text-slate-400">NO RETUR</th>
+                            <th className="p-4 font-bold text-slate-400">INVOICE</th>
+                            <th className="p-4 font-bold text-slate-400 text-right">TOTAL</th>
+                            <th className="p-4 font-bold text-slate-400">STATUS</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-slate-800/50">
                           {returnsData.returns && returnsData.returns.length > 0 ? (
                             returnsData.returns
                               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                               .map((ret: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-blue-50 transition">
-                                  <td className="p-4 font-bold text-slate-900">{ret.number}</td>
-                                  <td className="p-4 font-bold text-slate-900">{ret.invoice}</td>
-                                <td className="p-4 font-bold text-slate-900 text-right">{formatCurrency(Number(ret.total))}</td>
+                                <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                  <td className="p-4 font-bold text-slate-200">{ret.number}</td>
+                                  <td className="p-4 font-bold text-slate-200">{ret.invoice}</td>
+                                <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(ret.total))}</td>
                                 <td className="p-4">
                                   <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-black uppercase">
                                     {ret.status}
@@ -1589,30 +1580,30 @@ export default function Home() {
                   </div>
 
                   {/* Stock Movements Table */}
-                  <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
-                    <div className="p-5 border-b border-slate-300 bg-white/60">
-                      <h3 className="text-base font-bold text-slate-900">Mutasi Stok</h3>
-                      <p className="text-xs text-slate-600">Riwayat selisih, opname, dan perpindahan stok</p>
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                      <h3 className="text-base font-bold text-white">Mutasi Stok</h3>
+                      <p className="text-xs text-slate-400">Riwayat selisih, opname, dan perpindahan stok</p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                            <th className="p-4 font-bold text-white">TANGGAL</th>
-                            <th className="p-4 font-bold text-white">PRODUK</th>
-                            <th className="p-4 font-bold text-white">TIPE MUTASI</th>
-                            <th className="p-4 font-bold text-white text-right">QTY</th>
+                          <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                            <th className="p-4 font-bold text-slate-400">TANGGAL</th>
+                            <th className="p-4 font-bold text-slate-400">PRODUK</th>
+                            <th className="p-4 font-bold text-slate-400">TIPE MUTASI</th>
+                            <th className="p-4 font-bold text-slate-400 text-right">QTY</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-slate-800/50">
                           {returnsData.movements && returnsData.movements.length > 0 ? (
                             returnsData.movements
                               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                               .map((mov: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-blue-50 transition">
-                                  <td className="p-4 font-semibold text-slate-600">{new Date(mov.date).toLocaleDateString("id-ID")}</td>
-                                <td className="p-4 font-bold text-slate-900">{mov.product}</td>
-                                <td className="p-4 font-bold text-slate-700 uppercase tracking-wide">{mov.type}</td>
+                                <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                  <td className="p-4 font-semibold text-slate-400">{new Date(mov.date).toLocaleDateString("id-ID")}</td>
+                                <td className="p-4 font-bold text-slate-200">{mov.product}</td>
+                                <td className="p-4 font-bold text-slate-300 uppercase tracking-wide">{mov.type}</td>
                                 <td className={`p-4 font-bold text-right ${mov.qty >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                                   {mov.qty > 0 ? `+${mov.qty}` : mov.qty}
                                 </td>
@@ -1641,34 +1632,34 @@ export default function Home() {
 
               {/* -------------------- VIEW: EXPENSES -------------------- */}
               {activeView === "expenses" && (
-                <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
-                  <div className="p-5 border-b border-slate-300 bg-white/60 flex items-center justify-between">
+                <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                  <div className="p-5 border-b border-slate-800/60 bg-slate-900/60 flex items-center justify-between">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Laporan Pengeluaran Toko</h3>
-                      <p className="text-xs text-slate-600">Beban operasional ter-approve admin</p>
+                      <h3 className="text-base font-bold text-white">Laporan Pengeluaran Toko</h3>
+                      <p className="text-xs text-slate-400">Beban operasional ter-approve admin</p>
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                          <th className="p-4 font-bold text-white">KODE</th>
-                          <th className="p-4 font-bold text-white">KATEGORI</th>
-                          <th className="p-4 font-bold text-white">KETERANGAN</th>
-                          <th className="p-4 font-bold text-white text-right">NOMINAL</th>
-                          <th className="p-4 font-bold text-white">STATUS</th>
+                        <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                          <th className="p-4 font-bold text-slate-400">KODE</th>
+                          <th className="p-4 font-bold text-slate-400">KATEGORI</th>
+                          <th className="p-4 font-bold text-slate-400">KETERANGAN</th>
+                          <th className="p-4 font-bold text-slate-400 text-right">NOMINAL</th>
+                          <th className="p-4 font-bold text-slate-400">STATUS</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
+                      <tbody className="divide-y divide-slate-800/50">
                         {expenses.length > 0 ? (
                           expenses
                             .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                             .map((e: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-blue-50 transition">
-                                <td className="p-4 font-bold text-slate-900">{e.code}</td>
-                              <td className="p-4 font-bold text-slate-900">{e.category}</td>
-                              <td className="p-4 font-semibold text-slate-600 max-w-xs truncate">{e.note || "-"}</td>
-                              <td className="p-4 font-bold text-slate-900 text-right">{formatCurrency(Number(e.total))}</td>
+                              <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                <td className="p-4 font-bold text-slate-200">{e.code}</td>
+                              <td className="p-4 font-bold text-slate-200">{e.category}</td>
+                              <td className="p-4 font-semibold text-slate-400 max-w-xs truncate">{e.note || "-"}</td>
+                              <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(e.total))}</td>
                               <td className="p-4">
                                 <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-black uppercase">
                                   {e.status}
@@ -1697,34 +1688,34 @@ export default function Home() {
 
               {/* -------------------- VIEW: SALES / PENJUALAN / TRANSAKSI -------------------- */}
               {(activeView === "sales" || activeView === "transactions") && (
-                <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
-                  <div className="p-5 border-b border-slate-300 bg-white/60">
-                    <h3 className="text-base font-bold text-slate-900">Riwayat Transaksi Lengkap</h3>
-                    <p className="text-xs text-slate-600">Tabel monitoring penjualan dari mesin kasir</p>
+                <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                  <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                    <h3 className="text-base font-bold text-white">Riwayat Transaksi Lengkap</h3>
+                    <p className="text-xs text-slate-400">Tabel monitoring penjualan dari mesin kasir</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                          <th className="p-4 font-bold text-white">INVOICE</th>
-                          <th className="p-4 font-bold text-white">WAKTU</th>
-                          <th className="p-4 font-bold text-white">KASIR</th>
-                          <th className="p-4 font-bold text-white">METODE BAYAR</th>
-                          <th className="p-4 font-bold text-white text-right">TOTAL TRANSAKSI</th>
-                          <th className="p-4 font-bold text-white">STATUS</th>
+                        <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                          <th className="p-4 font-bold text-slate-400">INVOICE</th>
+                          <th className="p-4 font-bold text-slate-400">WAKTU</th>
+                          <th className="p-4 font-bold text-slate-400">KASIR</th>
+                          <th className="p-4 font-bold text-slate-400">METODE BAYAR</th>
+                          <th className="p-4 font-bold text-slate-400 text-right">TOTAL TRANSAKSI</th>
+                          <th className="p-4 font-bold text-slate-400">STATUS</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
+                      <tbody className="divide-y divide-slate-800/50">
                         {products.length > 0 ? (
                           products
                             .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                             .map((item: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-blue-50 transition">
-                                <td className="p-4 font-bold text-slate-900">{item.invoice}</td>
-                              <td className="p-4 font-semibold text-slate-600">{new Date(item.time).toLocaleString("id-ID")}</td>
-                              <td className="p-4 font-semibold text-slate-700">{item.cashier || "-"}</td>
-                              <td className="p-4 font-bold text-slate-700 uppercase tracking-wide">{item.method}</td>
-                              <td className="p-4 font-bold text-slate-900 text-right">{formatCurrency(Number(item.total))}</td>
+                              <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                <td className="p-4 font-bold text-slate-200">{item.invoice}</td>
+                              <td className="p-4 font-semibold text-slate-400">{new Date(item.time).toLocaleString("id-ID")}</td>
+                              <td className="p-4 font-semibold text-slate-300">{item.cashier || "-"}</td>
+                              <td className="p-4 font-bold text-slate-300 uppercase tracking-wide">{item.method}</td>
+                              <td className="p-4 font-bold text-slate-200 text-right">{formatCurrency(Number(item.total))}</td>
                               <td className="p-4">
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
                                   item.status === "COMPLETED"
@@ -1757,12 +1748,12 @@ export default function Home() {
 
               {/* -------------------- VIEW: LABA RUGI -------------------- */}
               {activeView === "profit" && (
-                <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden max-w-3xl mx-auto">
-                  <div className="p-5 border-b border-slate-300 bg-white/60">
-                    <h3 className="text-base font-bold text-slate-900">Laporan Laba Rugi</h3>
-                    <p className="text-xs text-slate-600">Ringkasan akun pendapatan, HPP, biaya, dan laba bersih (Fiqh Muamalah)</p>
+                <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden max-w-3xl mx-auto">
+                  <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                    <h3 className="text-base font-bold text-white">Laporan Laba Rugi</h3>
+                    <p className="text-xs text-slate-400">Ringkasan akun pendapatan, HPP, biaya, dan laba bersih (Fiqh Muamalah)</p>
                   </div>
-                  <div className="divide-y divide-slate-200">
+                  <div className="divide-y divide-slate-800/50">
                     {profitRows.length > 0 ? (
                       profitRows.map((row: any, idx: number) => {
                         const isTotal = row[2] === "total";
@@ -1770,16 +1761,16 @@ export default function Home() {
                           <div
                             key={idx}
                             className={`p-4 flex items-center justify-between text-xs font-semibold ${
-                              isTotal ? "bg-white/60 border-t border-b border-slate-300 py-4.5" : ""
+                              isTotal ? "bg-slate-950/60 border-t border-b border-slate-800/80 py-4.5" : ""
                             }`}
                           >
-                            <span className={isTotal ? "text-slate-900 font-bold uppercase tracking-wider" : "text-slate-600"}>
+                            <span className={isTotal ? "text-white font-bold uppercase tracking-wider" : "text-slate-400"}>
                               {row[0]}
                             </span>
                             <span className={`font-bold ${
                               isTotal
                                 ? Number(row[1]) >= 0 ? "text-emerald-400 text-sm font-black" : "text-rose-400 text-sm font-black"
-                                : Number(row[1]) >= 0 ? "text-slate-900" : "text-rose-400/90"
+                                : Number(row[1]) >= 0 ? "text-slate-200" : "text-rose-400/90"
                             }`}>
                               {formatCurrency(Number(row[1]))}
                             </span>
@@ -1801,21 +1792,21 @@ export default function Home() {
                   
                   {/* Stock metrics */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white border border-slate-300 p-4 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800/60 p-4 rounded-xl">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Total SKU Aktif</span>
-                      <strong className="text-xl font-bold text-slate-900">{stock.length}</strong>
+                      <strong className="text-xl font-bold text-white">{stock.length}</strong>
                     </div>
-                    <div className="bg-white border border-slate-300 p-4 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800/60 p-4 rounded-xl">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Stok Kritis</span>
                       <strong className="text-xl font-bold text-rose-500">{stock.filter((s) => s.system < 5).length}</strong>
                     </div>
-                    <div className="bg-white border border-slate-300 p-4 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800/60 p-4 rounded-xl">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Selisih Fisik vs Sistem</span>
                       <strong className="text-xl font-bold text-amber-500">
                         {stock.filter((s) => s.system !== s.physical).length} SKU
                       </strong>
                     </div>
-                    <div className="bg-white border border-slate-300 p-4 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800/60 p-4 rounded-xl">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Nilai Taksiran Stok</span>
                       <strong className="text-xl font-bold text-blue-500">
                         {formatCurrency(stock.reduce((sum, s) => sum + (s.system * Number(s.hpp || 0)), 0))}
@@ -1826,35 +1817,35 @@ export default function Home() {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     
                     {/* Stock Opname Table */}
-                    <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg shadow-slate-200/50 overflow-hidden">
-                      <div className="p-6 bg-gradient-to-r from-slate-50 to-blue-50/30">
-                        <h3 className="text-lg font-bold text-slate-900">Monitoring Penyesuaian Stok</h3>
-                        <p className="text-sm text-slate-600 mt-1">Bandingkan stok sistem POS dengan hitungan fisik</p>
+                    <div className="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                      <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                        <h3 className="text-base font-bold text-white">Monitoring Penyesuaian Stok</h3>
+                        <p className="text-xs text-slate-400">Bandingkan stok sistem POS dengan hitungan fisik</p>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-xs border-collapse">
                           <thead>
-                            <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                              <th className="px-6 py-4 font-semibold text-white rounded-tl-xl">SKU</th>
-                              <th className="px-6 py-4 font-semibold text-white">PRODUK</th>
-                              <th className="px-6 py-4 font-semibold text-white text-right">SISTEM</th>
-                              <th className="px-6 py-4 font-semibold text-white text-right">FISIK AKTUAL</th>
-                              <th className="px-6 py-4 font-semibold text-white text-right rounded-tr-xl">SELISIH</th>
+                            <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                              <th className="p-4 font-bold text-slate-400">SKU</th>
+                              <th className="p-4 font-bold text-slate-400">PRODUK</th>
+                              <th className="p-4 font-bold text-slate-400 text-right">SISTEM</th>
+                              <th className="p-4 font-bold text-slate-400 text-right">FISIK AKTUAL</th>
+                              <th className="p-4 font-bold text-slate-400 text-right">SELISIH</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-800/50">
                             {stock.length > 0 ? (
                               stock
                                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                 .map((s: any, idx: number) => {
                                   const diff = s.physical - s.system;
                                   return (
-                                    <tr key={idx} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 border-b border-slate-100 last:border-b-0">
-                                    <td className="px-6 py-4 font-bold text-slate-900">{s.sku}</td>
-                                    <td className="px-6 py-4 font-bold text-slate-900">{s.name}</td>
-                                    <td className="px-6 py-4 font-bold text-slate-700 text-right">{s.system}</td>
-                                    <td className="px-6 py-4 font-bold text-slate-900 text-right">{s.physical}</td>
-                                    <td className={`px-6 py-4 font-bold text-right ${diff === 0 ? "text-slate-600" : diff > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                    <tr key={idx} className="hover:bg-slate-800/20 transition">
+                                    <td className="p-4 font-bold text-slate-200">{s.sku}</td>
+                                    <td className="p-4 font-bold text-slate-200">{s.name}</td>
+                                    <td className="p-4 font-bold text-slate-300 text-right">{s.system}</td>
+                                    <td className="p-4 font-bold text-slate-200 text-right">{s.physical}</td>
+                                    <td className={`p-4 font-bold text-right ${diff === 0 ? "text-slate-400" : diff > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                                       {diff > 0 ? `+${diff}` : diff}
                                     </td>
                                   </tr>
@@ -1862,11 +1853,8 @@ export default function Home() {
                               })
                             ) : (
                               <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">
-                                  <div className="flex flex-col items-center gap-3">
-                                    <ClipboardList className="w-12 h-12 text-slate-300" />
-                                    <span>Belum ada monitoring stok opname.</span>
-                                  </div>
+                                <td colSpan={5} className="p-8 text-center text-slate-500 font-semibold">
+                                  Belum ada monitoring stok opname.
                                 </td>
                               </tr>
                             )}
@@ -1882,15 +1870,15 @@ export default function Home() {
                     </div>
 
                     {/* Stock Opname Adjustment Form */}
-                    <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden p-5 space-y-4">
+                    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden p-5 space-y-4">
                       <div>
-                        <h3 className="text-base font-bold text-slate-900">Input Hitung Fisik</h3>
-                        <p className="text-xs text-slate-600">Sesuaikan fisik barang di toko</p>
+                        <h3 className="text-base font-bold text-white">Input Hitung Fisik</h3>
+                        <p className="text-xs text-slate-400">Sesuaikan fisik barang di toko</p>
                       </div>
 
                       <form onSubmit={handleStockOpname} className="space-y-4">
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1.5">Pilih Produk (SKU)</label>
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5">Pilih Produk (SKU)</label>
                           <select
                             value={opnameSku}
                             onChange={(e) => {
@@ -1898,7 +1886,7 @@ export default function Home() {
                               const item = stock.find((s) => s.sku === e.target.value);
                               if (item) setOpnamePhysical(item.system);
                             }}
-                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition cursor-pointer"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition cursor-pointer"
                           >
                             <option value="">-- Pilih SKU Produk --</option>
                             {stock.map((item: any, idx: number) => (
@@ -1909,31 +1897,31 @@ export default function Home() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1.5">Jumlah Fisik Aktual</label>
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5">Jumlah Fisik Aktual</label>
                           <input
                             type="number"
                             required
                             min={0}
                             value={opnamePhysical}
                             onChange={(e) => setOpnamePhysical(Number(e.target.value))}
-                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1.5">Catatan Opname</label>
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5">Catatan Opname</label>
                           <textarea
                             rows={3}
                             value={opnameNote}
                             onChange={(e) => setOpnameNote(e.target.value)}
                             placeholder="Kondisi rak, selisih hitung, dll"
-                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
                           ></textarea>
                         </div>
 
                         <button
                           type="submit"
                           disabled={isSaving}
-                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-slate-900 font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
                         >
                           {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                           Simpan Hasil Hitung
@@ -1942,18 +1930,18 @@ export default function Home() {
 
                       {/* Stock Adjustment Local Feed */}
                       {opnameAlerts.length > 0 && (
-                        <div className="border-t border-slate-300 pt-4 space-y-2.5">
-                          <span className="block text-[10px] text-slate-600 font-extrabold uppercase tracking-wider">
+                        <div className="border-t border-slate-800/80 pt-4 space-y-2.5">
+                          <span className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
                             Aktivitas Opname Sesi Ini
                           </span>
-                          <div className="space-y-2 max-h-36 overflow-y-auto divide-y divide-slate-200">
+                          <div className="space-y-2 max-h-36 overflow-y-auto divide-y divide-slate-800/40">
                             {opnameAlerts.map((al: any, idx: number) => (
                               <div key={idx} className="text-xs pt-2 flex items-start justify-between gap-2.5">
                                 <div>
-                                  <strong className="block text-slate-900">{al.sku}</strong>
+                                  <strong className="block text-slate-200">{al.sku}</strong>
                                   <span className="text-[10px] text-slate-500 font-semibold">{al.time} WIB</span>
                                 </div>
-                                <span className={`font-bold ${al.diff === 0 ? "text-slate-600" : al.diff > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                <span className={`font-bold ${al.diff === 0 ? "text-slate-400" : al.diff > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                                   {al.diff > 0 ? `+${al.diff}` : al.diff} (Fisik: {al.physical})
                                 </span>
                               </div>
@@ -1972,47 +1960,47 @@ export default function Home() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
                   
                   {/* Reconcile Input Form */}
-                  <div className="bg-white border border-slate-300 rounded-2xl p-5 space-y-4">
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 space-y-4">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Cocokkan Kas</h3>
-                      <p className="text-xs text-slate-600">Rekonsiliasi nilai kas sistem POS dengan kas fisik aktual</p>
+                      <h3 className="text-base font-bold text-white">Cocokkan Kas</h3>
+                      <p className="text-xs text-slate-400">Rekonsiliasi nilai kas sistem POS dengan kas fisik aktual</p>
                     </div>
 
                     <form onSubmit={handleReconcile} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Total Kas Sistem (IDR)</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">Total Kas Sistem (IDR)</label>
                         <input
                           type="number"
                           required
                           value={reconcileSystemCash}
                           onChange={(e) => setReconcileSystemCash(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Total Kas Aktual (IDR)</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">Total Kas Aktual (IDR)</label>
                         <input
                           type="number"
                           required
                           value={reconcileActualCash}
                           onChange={(e) => setReconcileActualCash(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Catatan Perbedaan</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">Catatan Perbedaan</label>
                         <textarea
                           rows={3}
                           value={reconcileNote}
                           onChange={(e) => setReconcileNote(e.target.value)}
                           placeholder="Faktor selisih kas, kembalian, nominal tidak sinkron dll..."
-                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition resize-none"
                         ></textarea>
                       </div>
 
                       <button
                         type="submit"
-                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-slate-900 font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs cursor-pointer transition flex items-center justify-center gap-1.5"
                       >
                         <Scale size={14} />
                         Kalkulasi Selisih Kas
@@ -2021,7 +2009,7 @@ export default function Home() {
                   </div>
 
                   {/* Reconcile Result Display */}
-                  <div className="bg-white border border-slate-300 rounded-2xl p-6 h-64 flex flex-col justify-center items-center text-center space-y-4">
+                  <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-6 h-64 flex flex-col justify-center items-center text-center space-y-4">
                     {reconcileDiff === null ? (
                       <div className="text-slate-500 space-y-2">
                         <Info size={32} className="mx-auto text-slate-600" />
@@ -2031,13 +2019,13 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <span className="text-[10px] text-slate-600 font-extrabold uppercase tracking-widest block">Selisih Kas Rekonsiliasi</span>
+                        <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Selisih Kas Rekonsiliasi</span>
                         <strong className={`text-3xl font-black block ${
                           reconcileDiff === 0 ? "text-emerald-400" : reconcileDiff > 0 ? "text-teal-400" : "text-rose-500"
                         }`}>
                           {formatCurrency(reconcileDiff)}
                         </strong>
-                        <p className="text-xs text-slate-600 font-medium max-w-xs">
+                        <p className="text-xs text-slate-400 font-medium max-w-xs">
                           {reconcileDiff === 0
                             ? "Kas seimbang secara sempurna (Aman)."
                             : reconcileDiff > 0
@@ -2053,27 +2041,27 @@ export default function Home() {
 
               {/* -------------------- VIEW: SETTINGS -------------------- */}
               {activeView === "settings" && (
-                <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden max-w-4xl mx-auto">
-                  <div className="p-5 border-b border-slate-300 bg-white/60">
-                    <h3 className="text-base font-bold text-slate-900">Pengaturan Aplikasi</h3>
-                    <p className="text-xs text-slate-600">Konfigurasi variabel sistem dari database settings</p>
+                <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden max-w-4xl mx-auto">
+                  <div className="p-5 border-b border-slate-800/60 bg-slate-900/60">
+                    <h3 className="text-base font-bold text-white">Pengaturan Aplikasi</h3>
+                    <p className="text-xs text-slate-400">Konfigurasi variabel sistem dari database settings</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500">
-                          <th className="p-4 font-bold text-white">KEY</th>
-                          <th className="p-4 font-bold text-white">VALUE</th>
-                          <th className="p-4 font-bold text-white">DESKRIPSI</th>
+                        <tr className="bg-slate-950/60 border-b border-slate-800/60">
+                          <th className="p-4 font-bold text-slate-400">KEY</th>
+                          <th className="p-4 font-bold text-slate-400">VALUE</th>
+                          <th className="p-4 font-bold text-slate-400">DESKRIPSI</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
+                      <tbody className="divide-y divide-slate-800/50">
                         {settings.length > 0 ? (
                           settings.map((set: any, idx: number) => (
-                            <tr key={idx} className="hover:bg-blue-50 transition">
+                            <tr key={idx} className="hover:bg-slate-800/20 transition">
                               <td className="p-4 font-bold text-blue-400 font-mono">{set.key}</td>
-                              <td className="p-4 font-bold text-slate-900">{set.value}</td>
-                              <td className="p-4 font-semibold text-slate-600 max-w-sm whitespace-normal">{set.description || "-"}</td>
+                              <td className="p-4 font-bold text-slate-200">{set.value}</td>
+                              <td className="p-4 font-semibold text-slate-400 max-w-sm whitespace-normal">{set.description || "-"}</td>
                             </tr>
                           ))
                         ) : (
@@ -2095,7 +2083,7 @@ export default function Home() {
 
         {/* Footer timestamp */}
         {lastUpdated && (
-          <footer className="px-6 py-3 border-t border-slate-200 text-[10px] text-slate-500 font-bold text-right shrink-0 bg-white/40">
+          <footer className="px-6 py-3 border-t border-slate-800/50 text-[10px] text-slate-500 font-bold text-right shrink-0 bg-slate-900/40">
             Terakhir disinkronisasi: {lastUpdated.toLocaleTimeString("id-ID")} WIB
           </footer>
         )}
