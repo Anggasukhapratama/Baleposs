@@ -71,6 +71,7 @@ async function handleApi(req, res, url) {
   try {
     req.query = Object.fromEntries(url.searchParams.entries());
 
+    delete require.cache[require.resolve(apiPath)];
     const handler = require(apiPath);
     const apiRes = createApiResponse(res);
     await handler(req, apiRes);

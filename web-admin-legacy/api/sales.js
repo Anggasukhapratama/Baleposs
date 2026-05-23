@@ -3,10 +3,11 @@ const { query, sendJson, handleError, getDateRange, requireFinance } = require("
 module.exports = async function handler(req, res) {
   if (!requireFinance(req, res)) return;
   try {
-    const period = new URL(req.url, "http://localhost").searchParams.get("period") || "month";
+    const period = new URL(req.url, "http://localhost").searchParams.get("period") || "all";
     const { start, end } = getDateRange(period);
     const rows = await query(
       `SELECT s.invoice_number AS invoice,
+              s.sale_date AS time,
               COALESCE(u.full_name, '-') AS cashier,
               s.payment_method AS method,
               s.total_amount::bigint AS total,

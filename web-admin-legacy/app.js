@@ -59,12 +59,12 @@ function renderChart() {
     target.innerHTML = `<div class="empty-state">Belum ada data omzet untuk periode ini.</div>`;
     return;
   }
-  const max = Math.max(...chartData.map((item) => item.revenue));
+  const max = Math.max(...chartData.map((item) => Math.max(item.revenue, item.profit, 0)), 1);
   target.innerHTML = chartData.map((item) => `
     <div class="bar-group" title="${item.day}: omzet ${item.revenue} juta, laba ${item.profit} juta">
       <div class="bars">
-        <div class="bar revenue" style="height:${(item.revenue / max) * 100}%"></div>
-        <div class="bar profit" style="height:${(item.profit / max) * 100}%"></div>
+        <div class="bar revenue" style="height:${(Math.max(item.revenue, 0) / max) * 100}%"></div>
+        <div class="bar profit" style="height:${(Math.max(item.profit, 0) / max) * 100}%"></div>
       </div>
       <div class="bar-label">${item.day}</div>
     </div>
@@ -100,7 +100,15 @@ function authHeaders() {
 }
 
 function currentPeriod() {
-  return document.querySelector("#period-select").value || "month";
+  return document.querySelector("#period-select").value || "all";
+}
+
+function setMetricValue(selector, amount) {
+  const target = document.querySelector(selector);
+  if (!target) return;
+  const value = Number(amount || 0);
+  target.textContent = currency.format(value);
+  target.classList.toggle("negative", value < 0);
 }
 
 function normalizeStatus(status) {
@@ -274,10 +282,10 @@ async function loadLiveData() {
     setConnectionStatus(`Live DB: ${health.counts.sales} sales, ${health.counts.products} produk`, "live");
 
     const summary = dashboard.summary || {};
-    document.querySelector("#net-revenue").textContent = currency.format(Number(summary.net_revenue || 0));
-    document.querySelector("#gross-profit").textContent = currency.format(Number(summary.gross_profit || 0));
-    document.querySelector("#expense-total").textContent = currency.format(Number(summary.expenses || 0));
-    document.querySelector("#net-profit").textContent = currency.format(Number(summary.net_profit || 0));
+    setMetricValue("#net-revenue", summary.net_revenue);
+    setMetricValue("#gross-profit", summary.gross_profit);
+    setMetricValue("#expense-total", summary.expenses);
+    setMetricValue("#net-profit", summary.net_profit);
 
     chartData.splice(0, chartData.length, ...(dashboard.trend || []).map((item) => ({
       day: item.day,

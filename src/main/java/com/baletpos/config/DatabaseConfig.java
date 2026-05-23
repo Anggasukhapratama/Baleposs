@@ -600,8 +600,8 @@ public class DatabaseConfig {
     }
 
     private static void addColumnIfMissing(Connection conn, String tableName, String columnName, String definition) {
-        try (ResultSet rs = conn.getMetaData().getColumns(null, null, tableName, columnName)) {
-            if (rs.next()) {
+        try {
+            if (columnExists(conn, tableName, columnName)) {
                 return;
             }
 
@@ -612,6 +612,27 @@ public class DatabaseConfig {
         } catch (SQLException e) {
             logger.warn("Add column {}.{} skipped/failed: {}", tableName, columnName, e.getMessage());
         }
+    }
+
+    private static boolean columnExists(Connection conn, String tableName, String columnName) throws SQLException {
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, tableName, columnName)) {
+            if (rs.next()) {
+                return true;
+            }
+        }
+
+        if (DIALECT == DatabaseDialect.SQLITE) {
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+                while (rs.next()) {
+                    if (columnName.equalsIgnoreCase(rs.getString("name"))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void ensureTrialUsers(Connection conn) throws SQLException {

@@ -3,7 +3,7 @@ const { query, sendJson, handleError, getDateRange, requireFinance } = require("
 module.exports = async function handler(req, res) {
   if (!requireFinance(req, res)) return;
   try {
-    const period = new URL(req.url, "http://localhost").searchParams.get("period") || "month";
+    const period = new URL(req.url, "http://localhost").searchParams.get("period") || "all";
     const { start, end } = getDateRange(period);
 
     const [summaryRows, paymentRows, trendRows, transactionRows, approvalRows] = await Promise.all([
@@ -30,8 +30,8 @@ module.exports = async function handler(req, res) {
          SELECT
            sales_summary.revenue,
            returns_summary.returns,
-           GREATEST(sales_summary.revenue - returns_summary.returns, 0)::bigint AS net_revenue,
-           GREATEST(sales_summary.revenue - sales_summary.hpp, 0)::bigint AS gross_profit,
+           (sales_summary.revenue - returns_summary.returns)::bigint AS net_revenue,
+           (sales_summary.revenue - returns_summary.returns - sales_summary.hpp)::bigint AS gross_profit,
            expense_summary.expenses,
            (sales_summary.revenue - returns_summary.returns - sales_summary.hpp - expense_summary.expenses)::bigint AS net_profit
          FROM sales_summary, returns_summary, expense_summary`,
@@ -52,11 +52,15 @@ module.exports = async function handler(req, res) {
            to_char(day::date, 'Dy') AS day,
            COALESCE(SUM(s.total_amount), 0)::bigint AS revenue,
            COALESCE(SUM(s.total_amount - s.total_hpp), 0)::bigint AS profit
-         FROM generate_series((CURRENT_DATE - INTERVAL '6 days')::date, CURRENT_DATE, INTERVAL '1 day') day
+         FROM generate_series(
+           (COALESCE((SELECT MAX(sale_date)::date FROM sales WHERE status = 'COMPLETED' AND sale_date BETWEEN $1 AND $2), CURRENT_DATE) - INTERVAL '6 days')::date,
+           COALESCE((SELECT MAX(sale_date)::date FROM sales WHERE status = 'COMPLETED' AND sale_date BETWEEN $1 AND $2), CURRENT_DATE),
+           INTERVAL '1 day'
+         ) day
          LEFT JOIN sales s ON s.sale_date::date = day::date AND s.status = 'COMPLETED'
          GROUP BY day
          ORDER BY day`,
-        []
+        [start, end]
       ),
       query(
         `SELECT invoice_number AS invoice, sale_date AS time, payment_method AS method,

@@ -70,8 +70,8 @@
             <!-- Ghost: Refresh -->
             <Button fx:id="refreshBtn" text="" onAction="#handleRefresh" styleClass="btn-icon" prefWidth="38" prefHeight="38"/>
             
-            <!-- Secondary: Import CSV -->
-            <Button text=" Import" onAction="#handleImport" styleClass="btn-outline"/>
+            <!-- Secondary: Excel import for new products and stock updates -->
+            <Button text=" Import Excel" onAction="#handleImport" styleClass="btn-outline"/>
             
             <!-- Primary: Add Product -->
             <Button fx:id="addButton" text="+ Tambah Produk" onAction="#handleAdd" styleClass="primary-button"/>

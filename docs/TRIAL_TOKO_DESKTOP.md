@@ -119,6 +119,32 @@ $env:BALETPOS_RECEIPT_PRINTER="Nama Printer"
 
 Stock opname bisa dicek dari desktop dan web admin karena memakai database yang sama.
 
+## Upload Produk & Stok Excel
+
+Upload Excel dilakukan dari desktop oleh Admin Toko.
+
+Login:
+
+```text
+admintoko / toko123
+```
+
+Alur:
+
+1. Buka menu `Produk`.
+2. Klik `Import Excel`.
+3. Klik `Download Template Excel`.
+4. Isi kolom template: `SKU`, `Nama Produk`, `Tipe Produk`, `HPP`, `Margin (%)`, `Harga Jual`, `Stok`, `Deskripsi`.
+5. Klik `Import File Excel`.
+6. SKU baru akan dibuat sebagai produk baru.
+7. SKU yang sudah ada akan update stok, HPP, margin, harga jual, nama, tipe produk, dan deskripsi.
+
+Catatan:
+
+- `Tipe Produk` mengikuti nilai aplikasi: `LAPTOP_NEW`, `LAPTOP_SECOND`, `SPAREPARTS`, `PERIPHERAL`, `SERVICE`.
+- Import Excel tidak tersedia untuk role Kasir.
+- Untuk stok opname fisik, tetap pakai menu stock opname agar ada catatan adjustment.
+
 Alur trial:
 
 1. Pilih produk.

@@ -541,21 +541,26 @@ button {
 .metric-card p {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
   text-transform: uppercase;
 }
 
 .metric-card strong {
-  margin-top: 8px;
+  margin-top: 10px;
   color: var(--primary);
-  font-size: 26px;
-  line-height: 1.1;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.metric-card strong.negative {
+  color: var(--danger);
 }
 
 .metric-card span {
   margin-top: 10px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .good {
@@ -1276,11 +1281,17 @@ button,
 .metric-card p {
   color: var(--muted);
   letter-spacing: 0;
+  font-weight: 650;
 }
 
 .metric-card strong {
   color: var(--primary);
-  font-size: 25px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.metric-card strong.negative {
+  color: var(--danger);
 }
 
 .panel {

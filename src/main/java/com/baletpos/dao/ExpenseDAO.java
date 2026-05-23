@@ -1,56 +1,105 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.FirestoreHelper;
+import com.baletpos.config.DatabaseConfig;
+import com.baletpos.config.DatabaseDialect;
+import com.baletpos.config.SqlDialect;
 import com.baletpos.model.Expense;
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
+/**
+ * Data Access Object untuk Biaya Operasional
+ */
 public class ExpenseDAO {
     private static final Logger logger = LoggerFactory.getLogger(ExpenseDAO.class);
     private static final DateTimeFormatter EXP_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter DB_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static final String COLLECTION = "expenses";
-
-    public void create(Expense expense) throws Exception {
-        Firestore db = FirestoreHelper.getDb();
+    public void create(Expense expense) throws SQLException {
+        Connection conn = null;
         try {
-            Long id = FirestoreHelper.getNextId(COLLECTION);
-            expense.setId(id);
-            
-            String expenseNumber = generateExpenseNumber();
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            // Generate expense number
+            String expenseNumber = generateExpenseNumber(conn);
             expense.setExpenseNumber(expenseNumber);
 
-            DocumentReference docRef = db.collection(COLLECTION).document(String.valueOf(id));
-            docRef.set(expenseToMap(expense)).get();
-            
+            String sql = "INSERT INTO expenses (expense_number, expense_code_id, expense_date, amount, description, created_by) "
+                    + "VALUES (?, ?, ?, ?, ?, ?)";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, expense.getExpenseNumber());
+                pstmt.setLong(2, expense.getExpenseCodeId());
+                if (DatabaseConfig.getDialect() == DatabaseDialect.POSTGRES) {
+                    pstmt.setDate(3, java.sql.Date.valueOf(expense.getExpenseDate()));
+                } else {
+                    pstmt.setString(3, expense.getExpenseDate().toString());
+                }
+                pstmt.setInt(4, expense.getAmount().intValue());
+                pstmt.setString(5, expense.getDescription());
+                pstmt.setLong(6, expense.getCreatedBy());
+
+                pstmt.executeUpdate();
+
+                // SQLite style: get last inserted ID
+                try (Statement stmt = conn.createStatement();
+                        ResultSet rs = stmt.executeQuery("SELECT " + SqlDialect.lastInsertIdExpression())) {
+                    if (rs.next()) {
+                        expense.setId(rs.getLong(1));
+                    }
+                }
+            }
+
+            conn.commit();
             logger.info("Expense created successfully: {}", expenseNumber);
+
         } catch (Exception e) {
-            logger.error("Error creating expense", e);
-            throw new Exception("Error creating expense: " + e.getMessage(), e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.error("Error rolling back transaction", ex);
+                }
+            }
+            throw new SQLException("Error creating expense: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Error closing connection", e);
+                }
+            }
         }
     }
 
     public List<Expense> findAll() {
         List<Expense> expenses = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .orderBy("expense_date", Query.Direction.DESCENDING)
-                    .get();
+        String sql = "SELECT e.*, ec.code as expense_code, ec.name as expense_code_name, u.full_name as created_by_name "
+                + "FROM expenses e "
+                + "LEFT JOIN expense_codes ec ON e.expense_code_id = ec.id "
+                + "LEFT JOIN users u ON e.created_by = u.id "
+                + "ORDER BY e.expense_date DESC, e.id DESC";
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                expenses.add(mapDocumentToExpense(doc));
+        try (Connection conn = DatabaseConfig.getConnection();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                expenses.add(mapResultSetToExpense(rs));
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding all expenses", e);
         }
         return expenses;
@@ -58,21 +107,25 @@ public class ExpenseDAO {
 
     public List<Expense> findByDateRange(LocalDate startDate, LocalDate endDate) {
         List<Expense> expenses = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            String startStr = startDate.toString();
-            String endStr = endDate.toString();
+        String sql = "SELECT e.*, ec.code as expense_code, ec.name as expense_code_name, u.full_name as created_by_name "
+                + "FROM expenses e "
+                + "LEFT JOIN expense_codes ec ON e.expense_code_id = ec.id "
+                + "LEFT JOIN users u ON e.created_by = u.id "
+                + "WHERE e.expense_date BETWEEN ? AND ? "
+                + "ORDER BY e.expense_date DESC, e.id DESC";
 
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereGreaterThanOrEqualTo("expense_date", startStr)
-                    .whereLessThanOrEqualTo("expense_date", endStr)
-                    .orderBy("expense_date", Query.Direction.DESCENDING)
-                    .get();
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                expenses.add(mapDocumentToExpense(doc));
+            pstmt.setString(1, startDate.toString());
+            pstmt.setString(2, endDate.toString());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    expenses.add(mapResultSetToExpense(rs));
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding expenses by date range", e);
         }
         return expenses;
@@ -80,176 +133,168 @@ public class ExpenseDAO {
 
     public List<Expense> findByDateRangeAndCode(LocalDate startDate, LocalDate endDate, Long expenseCodeId) {
         List<Expense> expenses = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            String startStr = startDate.toString();
-            String endStr = endDate.toString();
+        String sql = "SELECT e.*, ec.code as expense_code, ec.name as expense_code_name, u.full_name as created_by_name "
+                + "FROM expenses e "
+                + "LEFT JOIN expense_codes ec ON e.expense_code_id = ec.id "
+                + "LEFT JOIN users u ON e.created_by = u.id "
+                + "WHERE e.expense_date BETWEEN ? AND ? AND e.expense_code_id = ? "
+                + "ORDER BY e.expense_date DESC, e.id DESC";
 
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereEqualTo("expense_code_id", expenseCodeId)
-                    .whereGreaterThanOrEqualTo("expense_date", startStr)
-                    .whereLessThanOrEqualTo("expense_date", endStr)
-                    .orderBy("expense_date", Query.Direction.DESCENDING)
-                    .get();
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                expenses.add(mapDocumentToExpense(doc));
+            pstmt.setString(1, startDate.toString());
+            pstmt.setString(2, endDate.toString());
+            pstmt.setLong(3, expenseCodeId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    expenses.add(mapResultSetToExpense(rs));
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding expenses by date range and code", e);
         }
         return expenses;
     }
 
     public BigDecimal getTotalByDateRange(LocalDate startDate, LocalDate endDate) {
-        BigDecimal total = BigDecimal.ZERO;
-        List<Expense> expenses = findByDateRange(startDate, endDate);
-        for (Expense e : expenses) {
-            if (e.getAmount() != null) {
-                total = total.add(e.getAmount());
+        String sql = "SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE expense_date BETWEEN ? AND ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, startDate.toString());
+            pstmt.setString(2, endDate.toString());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return BigDecimal.valueOf(rs.getLong("total"));
+                }
             }
+        } catch (SQLException e) {
+            logger.error("Error getting total expenses by date range", e);
         }
-        return total;
+        return BigDecimal.ZERO;
     }
 
     public Optional<Expense> findById(Long id) {
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
-            if (doc.exists()) {
-                return Optional.of(mapDocumentToExpense(doc));
+        String sql = "SELECT e.*, ec.code as expense_code, ec.name as expense_code_name, u.full_name as created_by_name "
+                + "FROM expenses e "
+                + "LEFT JOIN expense_codes ec ON e.expense_code_id = ec.id "
+                + "LEFT JOIN users u ON e.created_by = u.id "
+                + "WHERE e.id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToExpense(rs));
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding expense by id: {}", id, e);
         }
         return Optional.empty();
     }
 
     public void update(Expense expense) {
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            DocumentReference docRef = db.collection(COLLECTION).document(String.valueOf(expense.getId()));
-            
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("expense_code_id", expense.getExpenseCodeId());
-            updates.put("expense_date", expense.getExpenseDate().toString());
-            updates.put("amount", expense.getAmount().intValue());
-            updates.put("description", expense.getDescription());
-            
-            // Also update denormalized fields
-            try {
-                DocumentSnapshot ecDoc = db.collection("expense_codes").document(String.valueOf(expense.getExpenseCodeId())).get().get();
-                if (ecDoc.exists()) {
-                    updates.put("expense_code", ecDoc.getString("code"));
-                    updates.put("expense_code_name", ecDoc.getString("name"));
-                }
-            } catch (Exception ignored) {}
-            
-            docRef.update(updates).get();
-        } catch (Exception e) {
+        String sql = "UPDATE expenses SET expense_code_id = ?, expense_date = ?, amount = ?, description = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, expense.getExpenseCodeId());
+            if (DatabaseConfig.getDialect() == DatabaseDialect.POSTGRES) {
+                pstmt.setDate(2, java.sql.Date.valueOf(expense.getExpenseDate()));
+            } else {
+                pstmt.setString(2, expense.getExpenseDate().toString());
+            }
+            pstmt.setInt(3, expense.getAmount().intValue());
+            pstmt.setString(4, expense.getDescription());
+            pstmt.setLong(5, expense.getId());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
             logger.error("Error updating expense", e);
             throw new RuntimeException("Error updating expense: " + e.getMessage());
         }
     }
 
     public void delete(Long id) {
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            db.collection(COLLECTION).document(String.valueOf(id)).delete().get();
-        } catch (Exception e) {
+        String sql = "DELETE FROM expenses WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
             logger.error("Error deleting expense", e);
             throw new RuntimeException("Error deleting expense: " + e.getMessage());
         }
     }
 
-    private String generateExpenseNumber() {
+    private String generateExpenseNumber(Connection conn) throws SQLException {
         String datePart = LocalDate.now().format(EXP_DATE_FMT);
-        String prefix = "EXP-" + datePart + "-";
+        String prefix = "EXP";
 
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereGreaterThanOrEqualTo("expense_number", prefix)
-                    .whereLessThan("expense_number", prefix + "\uf8ff")
-                    .orderBy("expense_number", Query.Direction.DESCENDING)
-                    .limit(1)
-                    .get();
+        String sqlSelect = "SELECT last_number FROM invoice_sequences WHERE prefix = ? AND date_part = ?";
+        String sqlUpdate = "UPDATE invoice_sequences SET last_number = last_number + 1 WHERE prefix = ? AND date_part = ?";
+        String sqlInsert = "INSERT INTO invoice_sequences (prefix, date_part, last_number) VALUES (?, ?, 1)";
 
-            QuerySnapshot querySnapshot = future.get();
-            int nextNum = 1;
-            if (!querySnapshot.isEmpty()) {
-                String lastInv = querySnapshot.getDocuments().get(0).getString("expense_number");
-                if (lastInv != null && lastInv.length() > prefix.length()) {
-                    try {
-                        String numPart = lastInv.substring(prefix.length());
-                        nextNum = Integer.parseInt(numPart) + 1;
-                    } catch (NumberFormatException ignored) {}
+        int nextNum = 1;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlSelect)) {
+            pstmt.setString(1, prefix);
+            pstmt.setString(2, datePart);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    nextNum = rs.getInt("last_number") + 1;
+                    try (PreparedStatement uPstmt = conn.prepareStatement(sqlUpdate)) {
+                        uPstmt.setString(1, prefix);
+                        uPstmt.setString(2, datePart);
+                        uPstmt.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement iPstmt = conn.prepareStatement(sqlInsert)) {
+                        iPstmt.setString(1, prefix);
+                        iPstmt.setString(2, datePart);
+                        iPstmt.executeUpdate();
+                    }
                 }
             }
-            return String.format("%s%04d", prefix, nextNum);
-        } catch (Exception e) {
-            logger.error("Error generating expense number", e);
-            return prefix + System.currentTimeMillis();
         }
+
+        return String.format("%s-%s-%04d", prefix, datePart, nextNum);
     }
 
-    private Map<String, Object> expenseToMap(Expense e) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", e.getId());
-        map.put("expense_number", e.getExpenseNumber());
-        map.put("expense_code_id", e.getExpenseCodeId());
-        
-        if (e.getExpenseCodeId() != null) {
-            try {
-                DocumentSnapshot ecDoc = FirestoreHelper.getDb().collection("expense_codes").document(String.valueOf(e.getExpenseCodeId())).get().get();
-                if (ecDoc.exists()) {
-                    map.put("expense_code", ecDoc.getString("code"));
-                    map.put("expense_code_name", ecDoc.getString("name"));
-                }
-            } catch (Exception ignored) {}
-        }
-
-        map.put("expense_date", e.getExpenseDate().toString());
-        map.put("amount", e.getAmount() != null ? e.getAmount().intValue() : 0);
-        map.put("description", e.getDescription());
-        map.put("created_by", e.getCreatedBy());
-        map.put("created_at", LocalDateTime.now().format(DB_DATE_FMT));
-        
-        if (e.getCreatedBy() != null) {
-            try {
-                DocumentSnapshot userDoc = FirestoreHelper.getDb().collection("users").document(String.valueOf(e.getCreatedBy())).get().get();
-                if (userDoc.exists()) {
-                    map.put("created_by_name", userDoc.getString("full_name"));
-                }
-            } catch (Exception ignored) {}
-        }
-        
-        return map;
-    }
-
-    private Expense mapDocumentToExpense(DocumentSnapshot doc) {
+    private Expense mapResultSetToExpense(ResultSet rs) throws SQLException {
         Expense e = new Expense();
-        e.setId(doc.getLong("id"));
-        e.setExpenseNumber(doc.getString("expense_number"));
-        e.setExpenseCodeId(doc.getLong("expense_code_id"));
-        e.setExpenseCode(doc.getString("expense_code"));
-        e.setExpenseCodeName(doc.getString("expense_code_name"));
+        e.setId(rs.getLong("id"));
+        e.setExpenseNumber(rs.getString("expense_number"));
+        e.setExpenseCodeId(rs.getLong("expense_code_id"));
+        e.setExpenseCode(rs.getString("expense_code"));
+        e.setExpenseCodeName(rs.getString("expense_code_name"));
 
-        String dateStr = doc.getString("expense_date");
+        String dateStr = rs.getString("expense_date");
         if (dateStr != null && !dateStr.isBlank()) {
             try {
-                e.setExpenseDate(LocalDate.parse(dateStr.substring(0, 10)));
+                String cleanDate = dateStr.length() > 10 ? dateStr.substring(0, 10) : dateStr;
+                e.setExpenseDate(LocalDate.parse(cleanDate));
             } catch (Exception ex) {
                 logger.warn("Failed to parse expense_date: {}", dateStr);
             }
         }
 
-        e.setAmount(BigDecimal.valueOf(doc.getLong("amount") != null ? doc.getLong("amount") : 0));
-        e.setDescription(doc.getString("description"));
-        e.setCreatedBy(doc.getLong("created_by"));
-        e.setCreatedByName(doc.getString("created_by_name"));
+        e.setAmount(BigDecimal.valueOf(rs.getLong("amount")));
+        e.setDescription(rs.getString("description"));
+        e.setCreatedBy(rs.getLong("created_by"));
+        e.setCreatedByName(rs.getString("created_by_name"));
 
-        String createdAtStr = doc.getString("created_at");
+        String createdAtStr = rs.getString("created_at");
         if (createdAtStr != null && !createdAtStr.isBlank()) {
             try {
                 e.setCreatedAt(LocalDateTime.parse(createdAtStr, DB_DATE_FMT));
@@ -261,5 +306,3 @@ public class ExpenseDAO {
         return e;
     }
 }
-
-

@@ -5,6 +5,7 @@ import com.baletpos.model.User;
 import com.baletpos.service.AuthService;
 import com.baletpos.util.Session;
 import javafx.fxml.FXML;
+import javafx.concurrent.Task;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -35,33 +36,53 @@ public class LoginController {
 
     @FXML
     private void handleLogin() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
+        String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
+        String password = passwordField.getText() == null ? "" : passwordField.getText();
 
         if (username.isEmpty() || password.isEmpty()) {
             showError("Username dan Password harus diisi!");
             return;
         }
 
-        if (authService.login(username, password)) {
-            // Login successful
-            User user = Session.getInstance().getCurrentUser();
+        setLoginBusy(true);
+        hideError();
 
-            try {
+        Task<Boolean> loginTask = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return authService.login(username, password);
+            }
+        };
+
+        loginTask.setOnSucceeded(event -> {
+            setLoginBusy(false);
+            if (Boolean.TRUE.equals(loginTask.getValue())) {
+                User user = Session.getInstance().getCurrentUser();
                 if (user.getRole() == User.Role.KASIR
                         || user.getRole() == User.Role.ADMIN_TOKO
                         || user.getRole() == User.Role.ADMIN_KEUANGAN) {
-                    openDashboard();
+                    try {
+                        openDashboard();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        showError("Gagal memuat halaman selanjutnya.");
+                    }
                 } else {
                     showError("Role user tidak dikenali.");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-                showError("Gagal memuat halaman selanjutnya.");
+            } else {
+                showError("Username atau Password salah!");
             }
-        } else {
-            showError("Username atau Password salah!");
-        }
+        });
+
+        loginTask.setOnFailed(event -> {
+            setLoginBusy(false);
+            showError("Login gagal. Periksa koneksi database.");
+        });
+
+        Thread thread = new Thread(loginTask, "baletpos-login");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void openDashboard() throws IOException {
@@ -86,6 +107,19 @@ public class LoginController {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
+    }
+
+    private void hideError() {
+        errorLabel.setText("");
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
+
+    private void setLoginBusy(boolean busy) {
+        loginButton.setDisable(busy);
+        usernameField.setDisable(busy);
+        passwordField.setDisable(busy);
+        loginButton.setText(busy ? "Memproses..." : "Masuk");
     }
 }
 

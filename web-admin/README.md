@@ -1,82 +1,36 @@
-# BaletPOS Web Admin Keuangan
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Web dashboard untuk role Admin Keuangan. Bisa di-deploy ke Vercel dengan root directory `web-admin`.
+## Getting Started
 
-Web ini bisa membaca database yang sama dengan desktop jika desktop BaletPOS dijalankan memakai mode Supabase/PostgreSQL.
+First, run the development server:
 
-## Modul Web
-
-Disesuaikan dengan modul desktop:
-
-- Dashboard
-- Produk dan Stok
-- Pembelian
-- Supplier
-- Retur / Mutasi
-- Biaya
-- Penjualan
-- Transaksi
-- Laba Rugi
-- Stock Opname
-- Rekonsiliasi Kas
-- Setting
-
-Mode tulis ke DB yang sudah aktif:
-
-- Tambah produk
-- Tambah supplier
-- Stock opname / adjustment stok
-
-Modul lain sudah tampil live dari database yang sama dan bisa diperluas menjadi form edit penuh.
-
-## Deploy Vercel
-
-1. Import repository ke Vercel.
-2. Set **Root Directory** ke `web-admin`.
-3. Set **Framework Preset** ke `Other`.
-4. Build command dikosongkan.
-5. Output directory dikosongkan.
-6. Set environment variable Vercel:
-
-```text
-DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@HOST:PORT/postgres?sslmode=require
-WEB_SESSION_SECRET=isi-dengan-random-secret-panjang
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Gunakan database Supabase/PostgreSQL yang sama dengan desktop. Desktop memakai format JDBC:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```text
-BALETPOS_DB_URL=jdbc:postgresql://HOST:PORT/postgres?sslmode=require
-BALETPOS_DB_USER=postgres.PROJECT_REF
-BALETPOS_DB_PASSWORD=PASSWORD
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Vercel API Node memakai format PostgreSQL URI biasa di `DATABASE_URL`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Local Preview
+## Learn More
 
-Jalankan server lokal agar route `/api/*` aktif tanpa harus login Vercel CLI:
+To learn more about Next.js, take a look at the following resources:
 
-```powershell
-npm start
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-URL lokal:
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-```text
-http://localhost:4173
-```
+## Deploy on Vercel
 
-Jika ingin menjalankan runtime Vercel lokal, gunakan:
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-```powershell
-npm run vercel:dev
-```
-
-Web admin tidak memakai data dummy. Jika `DATABASE_URL` belum diset atau API gagal, login/laporan akan gagal supaya tidak tertukar dengan data contoh.
-
-Login produksi memakai user tabel `users` dengan role `ADMIN_KEUANGAN`, contoh default desktop:
-
-```text
-adminkeuangan / keuangan123
-```
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
