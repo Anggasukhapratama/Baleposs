@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 public class UserDAO {
@@ -34,6 +35,35 @@ public class UserDAO {
             }
         } catch (Exception e) {
             logger.error("Error finding user by username: {}", username, e);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<User> findFirstActiveByRoles(List<User.Role> roles) {
+        try {
+            Firestore db = FirestoreHelper.getDb();
+            // Firestore tidak support "whereIn" untuk semua versi,
+            // jadi kita query semua user aktif lalu filter di Java.
+            ApiFuture<QuerySnapshot> future = db.collection("users")
+                    .whereEqualTo("is_active", 1L)
+                    .get();
+
+            QuerySnapshot querySnapshot = future.get();
+            for (QueryDocumentSnapshot doc : querySnapshot.getDocuments()) {
+                String roleStr = doc.getString("role");
+                if (roleStr != null) {
+                    try {
+                        User.Role role = User.Role.valueOf(roleStr);
+                        if (roles.contains(role)) {
+                            return Optional.of(mapDocumentToUser(doc));
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // Role tidak dikenal, skip
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error finding first active user by roles: {}", roles, e);
         }
         return Optional.empty();
     }

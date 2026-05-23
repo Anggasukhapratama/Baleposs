@@ -26,11 +26,11 @@
     <!-- Action Buttons -->
     <HBox spacing="12">
         <Button fx:id="addButton" text="+ Tambah Supplier" onAction="#handleAdd" 
-                style="-fx-background-color: linear-gradient(to bottom, #1E40AF, #1F3A8A); -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 24; -fx-background-radius: 10; -fx-border-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.3), 6, 0, 0, 2);"/>
+                style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 800; -fx-padding: 12 24; -fx-background-radius: 8; -fx-border-radius: 8; -fx-cursor: hand;"/>
         <Button fx:id="editButton" text="✎ Edit" onAction="#handleEdit" disable="true"
-                style="-fx-background-color: rgba(245, 158, 11, 0.1); -fx-text-fill: #1E40AF; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 20; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: rgba(245, 158, 11, 0.3); -fx-border-width: 1.5; -fx-cursor: hand;"/>
+                style="-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-font-size: 13px; -fx-font-weight: 800; -fx-padding: 12 20; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #fde68a; -fx-border-width: 1; -fx-cursor: hand;"/>
         <Button fx:id="deleteButton" text="🗑 Hapus" onAction="#handleDelete" disable="true"
-                style="-fx-background-color: rgba(239, 68, 68, 0.1); -fx-text-fill: #dc2626; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 20; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: rgba(239, 68, 68, 0.3); -fx-border-width: 1.5; -fx-cursor: hand;"/>
+                style="-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-size: 13px; -fx-font-weight: 800; -fx-padding: 12 20; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #fecaca; -fx-border-width: 1; -fx-cursor: hand;"/>
     </HBox>
 
     <!-- Table -->

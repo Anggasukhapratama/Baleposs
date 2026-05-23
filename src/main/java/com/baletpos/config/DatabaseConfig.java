@@ -675,9 +675,17 @@ public class DatabaseConfig {
     }
 
     private static String getConfiguredDbUrl() {
+        // Prefer explicit BaletPOS var
         String configured = getConfigValue("baletpos.db.url", "BALETPOS_DB_URL");
+
+        // Backward/compat: some deployments use DATABASE_URL
+        if (configured == null || configured.isBlank()) {
+            configured = getConfigValue("DATABASE_URL", "DATABASE_URL");
+        }
+
         return configured == null || configured.isBlank() ? SQLITE_DB_URL : configured.trim();
     }
+
 
     private static String getConfigValue(String propertyName, String envName) {
         String propertyValue = System.getProperty(propertyName);

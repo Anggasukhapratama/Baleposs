@@ -1,155 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" 
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.baletpos.controller.DashboardController"
-            style="-fx-background-color: #f6f8fb;">
+            styleClass="dashboard-shell">
 
-    <!-- TOP: App Bar (56px) -->
     <top>
-        <HBox fx:id="topBar" alignment="CENTER_LEFT" spacing="8" styleClass="app-bar">
-            <Label fx:id="welcomeLabel" text="Dashboard" style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #334155;"/>
+        <HBox fx:id="topBar" alignment="CENTER_LEFT" spacing="16" styleClass="dashboard-topbar">
+            <Label fx:id="welcomeLabel" text="Dashboard" styleClass="dashboard-title"/>
+            <TextField promptText="Cari transaksi atau produk..." HBox.hgrow="ALWAYS" maxWidth="420" styleClass="dashboard-search"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="roleLabel" text="Admin" styleClass="user-badge"/>
+            <Button text="SYNC" styleClass="sync-button"/>
+            <Button text="KASIR" onAction="#showPOS" styleClass="primary-button"/>
+            <Separator orientation="VERTICAL"/>
+            <VBox alignment="CENTER_RIGHT" spacing="2">
+                <Label text="Admin Toko" styleClass="user-name"/>
+                <Label fx:id="roleLabel" text="ADMIN_TOKO" styleClass="user-role"/>
+            </VBox>
             <Button text="Keluar" onAction="#handleLogout" styleClass="danger-button"/>
         </HBox>
     </top>
 
-    <!-- LEFT: Sidebar (220px) -->
     <left>
-        <VBox fx:id="sidebar" styleClass="sidebar">
-            <padding><Insets top="12" bottom="12"/></padding>
-            
-            <!-- Logo -->
-            <VBox spacing="2" styleClass="logo-block">
-                <Label text="BaletPOS" styleClass="logo-title"/>
-                <Label text="Toko Komputer" styleClass="logo-subtitle"/>
-            </VBox>
+        <VBox fx:id="sidebar" styleClass="sidebar dashboard-sidebar">
+            <padding><Insets top="24" bottom="14"/></padding>
 
-            <!-- Menu -->
-            <VBox spacing="2" style="-fx-padding: 8 8;">
-                <Label text="MENU UTAMA" styleClass="nav-section"/>
-                
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="logo-block">
+                <StackPane styleClass="logo-mark">
+                    <Label text="BP" styleClass="logo-mark-text"/>
+                </StackPane>
+                <VBox spacing="1">
+                    <Label text="BaletPOS" styleClass="logo-title"/>
+                    <Label text="Hardware Solutions" styleClass="logo-subtitle"/>
+                </VBox>
+            </HBox>
+
+            <VBox spacing="2" styleClass="nav-list">
                 <Button text="Dashboard" onAction="#showDashboard" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button active"/>
-                
                 <Button text="POS / Kasir" onAction="#showPOS" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-                
                 <Button text="Produk" onAction="#showProducts" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-                
                 <Button fx:id="purchaseButton" text="Pembelian" onAction="#showPurchase" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-                
                 <Button fx:id="supplierButton" text="Supplier" onAction="#showSuppliers" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-            </VBox>
-
-            <VBox spacing="2" style="-fx-padding: 0 8;">
-                <Label text="ADMIN" styleClass="nav-section"/>
-                
-                <Button fx:id="returnButton" text="Retur/Mutasi" onAction="#showReturns" maxWidth="Infinity" alignment="BASELINE_LEFT"
+                <Button fx:id="returnButton" text="Retur / Mutasi" onAction="#showReturns" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-                
                 <Button fx:id="expenseButton" text="Biaya" onAction="#showExpenses" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-            </VBox>
-
-            <VBox spacing="2" style="-fx-padding: 0 8;">
-                <Label text="LAPORAN" styleClass="nav-section"/>
-                
                 <Button text="Penjualan" onAction="#showSalesReportLaptop" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-
                 <Button text="Transaksi" onAction="#showTransactionList" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-
-                <Button text="Aset/Inventory" onAction="#showInventoryReport" maxWidth="Infinity" alignment="BASELINE_LEFT"
+                <Button text="Aset / Inventory" onAction="#showInventoryReport" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
-                
                 <Button fx:id="profitLossButton" text="Laba Rugi" onAction="#showProfitLossReport" maxWidth="Infinity" alignment="BASELINE_LEFT"
                         styleClass="nav-button"/>
             </VBox>
 
             <VBox VBox.vgrow="ALWAYS"/>
-            
-            <VBox style="-fx-padding: 16;">
-                <Label text="v1.0.0" style="-fx-font-size: 11px; -fx-text-fill: #94a3b8;"/>
+
+            <VBox spacing="2" styleClass="nav-list nav-system">
+                <Button fx:id="settingsButton" text="Setting" onAction="#showSettings" maxWidth="Infinity" alignment="BASELINE_LEFT"
+                        styleClass="nav-button"/>
             </VBox>
         </VBox>
     </left>
 
-    <!-- CENTER: Content -->
     <center>
-        <StackPane fx:id="contentArea" style="-fx-background-color: #f6f8fb;">
-            
-            <!-- Default Dashboard Content -->
-            <VBox spacing="12" style="-fx-padding: 14;">
-                
-                <!-- Stats Cards -->
-                <HBox spacing="8">
-                    <VBox spacing="4" HBox.hgrow="ALWAYS" 
-                          style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                        <Label text="Penjualan Hari Ini" style="-fx-font-size: 12px; -fx-text-fill: #64748b;"/>
-                        <Label fx:id="todaySalesCountLabel" text="0 transaksi" style="-fx-font-size: 13px; -fx-text-fill: #64748b;"/>
-                        <Label fx:id="todaySalesTotalLabel" text="Rp 0" style="-fx-font-size: 24px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
-                    </VBox>
-                    
-                    <VBox spacing="4" HBox.hgrow="ALWAYS" 
-                          style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                        <Label text="Stok Menipis" style="-fx-font-size: 12px; -fx-text-fill: #64748b;"/>
-                        <Label text="Di bawah minimum" style="-fx-font-size: 13px; -fx-text-fill: #64748b;"/>
-                        <Label fx:id="lowStockLabel" text="0 produk" style="-fx-font-size: 24px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                    </VBox>
-                    
-                    <VBox spacing="4" HBox.hgrow="ALWAYS" 
-                          style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                        <Label text="Omzet Bulan Ini" style="-fx-font-size: 12px; -fx-text-fill: #64748b;"/>
-                        <Label text="Total pendapatan" style="-fx-font-size: 13px; -fx-text-fill: #64748b;"/>
-                        <Label fx:id="monthRevenueLabel" text="Rp 0" style="-fx-font-size: 24px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                    </VBox>
-                </HBox>
-
-                <!-- Charts -->
-                <HBox spacing="8" VBox.vgrow="ALWAYS">
-                    <VBox HBox.hgrow="SOMETIMES" prefWidth="400"
-                          style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                        <Label text="Penjualan per Kategori" style="-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                        <PieChart fx:id="categoryPieChart" prefHeight="220" legendSide="BOTTOM"/>
-                    </VBox>
-                    
-                    <VBox HBox.hgrow="ALWAYS"
-                          style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                        <Label text="Penjualan 7 Hari Terakhir" style="-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                        <BarChart fx:id="weeklySalesChart" prefHeight="220" legendSide="BOTTOM">
-                            <xAxis><CategoryAxis fx:id="weeklyXAxis"/></xAxis>
-                            <yAxis><NumberAxis fx:id="weeklyYAxis" label="Juta Rp"/></yAxis>
-                        </BarChart>
-                    </VBox>
-                </HBox>
-
-                <!-- Quick Actions -->
-                <HBox spacing="12" alignment="CENTER_LEFT" 
-                      style="-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0, 0, 2);">
-                    <Label text="Akses Cepat:" style="-fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                    <Button text="Buka Kasir" onAction="#showPOS" 
-                            style="-fx-background-color: #1E40AF; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 8; -fx-cursor: hand;"/>
-                    <Button text="Lihat Produk" onAction="#showProducts" 
-                            style="-fx-background-color: transparent; -fx-text-fill: #1E40AF; -fx-border-color: #1E40AF; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 8 16; -fx-cursor: hand;"/>
-                    <Button text="Laporan Laba Rugi" onAction="#showProfitLossReport" 
-                            style="-fx-background-color: transparent; -fx-text-fill: #64748b; -fx-border-color: #e2e8f0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 8 16; -fx-cursor: hand;"/>
-                </HBox>
-            </VBox>
-
-        </StackPane>
+        <StackPane fx:id="contentArea" styleClass="dashboard-content-host"/>
     </center>
 
 </BorderPane>
-
-
-

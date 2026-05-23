@@ -5,189 +5,161 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" 
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.baletpos.controller.DashboardContentController"
-            fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER"
-            style="-fx-background-color: #f6f8fb; -fx-border-color: transparent; -fx-background: #f6f8fb;">
-            
-<VBox spacing="10" style="-fx-background-color: #f6f8fb;">
-    <padding>
-        <Insets bottom="14" left="18" right="18" top="14"/>
-    </padding>
-    
-    <!-- Header -->
-    <VBox spacing="3">
-        <Label text="Dashboard" style="-fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: #111827;"/>
-        <Label text="Berikut adalah ringkasan performa toko komputer Anda hari ini." style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+            fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll">
+
+    <VBox spacing="20" styleClass="dashboard-canvas">
+        <padding>
+            <Insets top="24" right="24" bottom="24" left="24"/>
+        </padding>
+
+        <HBox alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="3">
+                <Label text="Ringkasan Operasional" styleClass="panel-title"/>
+                <Label text="Data dashboard mengikuti database aktif desktop." styleClass="muted-label"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="dbStatusLabel" text="DB: Mengecek..." styleClass="db-status"/>
+        </HBox>
+
+        <HBox spacing="16" styleClass="kpi-row">
+            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                <Label text="Penjualan Hari Ini" styleClass="kpi-label"/>
+                <HBox alignment="BOTTOM_LEFT" spacing="10">
+                    <Label fx:id="todayTransactionLabel" text="0" styleClass="kpi-value"/>
+                    <Label fx:id="transactionTrendLabel" text="0% vs Kemarin" styleClass="trend-good"/>
+                </HBox>
+                <ProgressBar progress="0.75" maxWidth="Infinity" styleClass="kpi-progress"/>
+            </VBox>
+
+            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                <Label text="Omzet Hari Ini" styleClass="kpi-label"/>
+                <Label fx:id="todaySalesLabel" text="Rp 0" styleClass="kpi-value kpi-money"/>
+                <Label fx:id="salesTrendLabel" text="0% vs Kemarin" styleClass="muted-label"/>
+            </VBox>
+
+            <HBox spacing="12" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                <StackPane styleClass="metric-icon danger-metric">
+                    <Label text="!" styleClass="metric-icon-text"/>
+                </StackPane>
+                <VBox spacing="5">
+                    <Label text="Stok Menipis" styleClass="kpi-label"/>
+                    <Label fx:id="lowStockTotalLabel" text="0 item" styleClass="kpi-value danger-text"/>
+                    <Label text="Item perlu restock" styleClass="muted-label"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="12" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                <StackPane styleClass="metric-icon sync-metric">
+                    <Label text="S" styleClass="metric-icon-text"/>
+                </StackPane>
+                <VBox spacing="5">
+                    <Label text="Pengeluaran Bulan Ini" styleClass="kpi-label"/>
+                    <Label fx:id="monthExpenseLabel" text="Rp 0" styleClass="kpi-value warning-text"/>
+                    <Label fx:id="expenseTrendLabel" text="0% vs Bulan Lalu" styleClass="muted-label"/>
+                </VBox>
+            </HBox>
+        </HBox>
+
+        <GridPane hgap="20" vgap="20">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="66"/>
+                <ColumnConstraints percentWidth="34"/>
+            </columnConstraints>
+
+            <VBox spacing="14" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="panel dashboard-panel">
+                <HBox alignment="CENTER_LEFT">
+                    <VBox spacing="3">
+                        <Label text="Sales Trend (Weekly)" styleClass="panel-title"/>
+                        <Label fx:id="chartSummaryLabel" text="Total: Rp 0" styleClass="muted-label"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="growthBadge" text="0% Pertumbuhan" styleClass="blue-badge"/>
+                </HBox>
+                <LineChart fx:id="salesTrendChart" minHeight="260" prefHeight="280" legendVisible="false"
+                           animated="false" createSymbols="false" horizontalGridLinesVisible="true"
+                           verticalGridLinesVisible="false">
+                    <xAxis>
+                        <CategoryAxis fx:id="chartXAxis" side="BOTTOM"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis fx:id="chartYAxis" side="LEFT" label="Juta Rp"/>
+                    </yAxis>
+                </LineChart>
+            </VBox>
+
+            <VBox GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="panel table-panel">
+                <HBox alignment="CENTER_LEFT" styleClass="panel-header">
+                    <Label text="Top Products" styleClass="panel-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="..." styleClass="panel-action"/>
+                </HBox>
+                <VBox fx:id="topProductsContainer" spacing="0">
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="topProduct1Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="topProduct1Sku" text="SKU: -" styleClass="row-subtitle"/>
+                        </VBox>
+                        <Label fx:id="topProduct1Qty" text="0 Terjual" styleClass="row-value"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="topProduct2Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="topProduct2Sku" text="SKU: -" styleClass="row-subtitle"/>
+                        </VBox>
+                        <Label fx:id="topProduct2Qty" text="0 Terjual" styleClass="row-value"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="topProduct3Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="topProduct3Sku" text="SKU: -" styleClass="row-subtitle"/>
+                        </VBox>
+                        <Label fx:id="topProduct3Qty" text="0 Terjual" styleClass="row-value"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <VBox GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="panel table-panel">
+                <HBox alignment="CENTER_LEFT" styleClass="panel-header">
+                    <Label text="Latest Transactions" styleClass="panel-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Lihat Semua" styleClass="link-button"/>
+                </HBox>
+                <VBox fx:id="latestTransactionsContainer" styleClass="mini-table"/>
+            </VBox>
+
+            <VBox GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="panel table-panel">
+                <HBox alignment="CENTER_LEFT" styleClass="panel-header">
+                    <Label text="Low Stock" styleClass="panel-title danger-text"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="INV" styleClass="danger-text"/>
+                </HBox>
+                <VBox fx:id="lowStockContainer" spacing="0">
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="lowStock1Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="lowStock1Qty" text="Sisa 0 unit" styleClass="row-value danger-text"/>
+                        </VBox>
+                        <Button fx:id="restock1Btn" text="Restok" styleClass="link-button"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="lowStock2Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="lowStock2Qty" text="Sisa 0 unit" styleClass="row-value danger-text"/>
+                        </VBox>
+                        <Button fx:id="restock2Btn" text="Restok" styleClass="link-button"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="list-row">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="lowStock3Name" text="Memuat..." styleClass="row-title"/>
+                            <Label fx:id="lowStock3Qty" text="Sisa 0 unit" styleClass="row-value danger-text"/>
+                        </VBox>
+                        <Button fx:id="restock3Btn" text="Restok" styleClass="link-button"/>
+                    </HBox>
+                </VBox>
+                <Button text="BUAT PESANAN STOK" maxWidth="Infinity" styleClass="danger-button"/>
+            </VBox>
+        </GridPane>
     </VBox>
-
-    <!-- 3 KPI Cards -->
-    <HBox spacing="8">
-        <!-- Penjualan Hari Ini -->
-        <VBox HBox.hgrow="ALWAYS" spacing="8"
-              style="-fx-background-color: white; -fx-padding: 18 20; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-            <HBox alignment="CENTER_LEFT">
-                <Label text="Penjualan Hari Ini" style="-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #64748b;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <VBox alignment="CENTER" style="-fx-background-color: #EFF6FF; -fx-background-radius: 8; -fx-padding: 8;">
-                    <Label text="Rp" style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                </VBox>
-            </HBox>
-            <Label fx:id="todaySalesLabel" text="Rp 0" style="-fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: #111827;"/>
-            <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label fx:id="salesTrendLabel" text="+0% vs Kemarin" style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E40AF;"/>
-            </HBox>
-        </VBox>
-
-        <!-- Jumlah Transaksi Hari Ini -->
-        <VBox HBox.hgrow="ALWAYS" spacing="8"
-              style="-fx-background-color: white; -fx-padding: 18 20; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-            <HBox alignment="CENTER_LEFT">
-                <Label text="Jumlah Transaksi Hari Ini" style="-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #64748b;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <VBox alignment="CENTER" style="-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-padding: 8;">
-                    <Label text="Trx" style="-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                </VBox>
-            </HBox>
-            <Label fx:id="todayTransactionLabel" text="0" style="-fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: #111827;"/>
-            <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label fx:id="transactionTrendLabel" text="+0% vs Kemarin" style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E40AF;"/>
-            </HBox>
-        </VBox>
-
-        <!-- Pengeluaran Bulan Ini -->
-        <VBox HBox.hgrow="ALWAYS" spacing="8"
-              style="-fx-background-color: white; -fx-padding: 18 20; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-            <HBox alignment="CENTER_LEFT">
-                <Label text="Pengeluaran Bulan Ini" style="-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #64748b;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <VBox alignment="CENTER" style="-fx-background-color: #EFF6FF; -fx-background-radius: 8; -fx-padding: 8;">
-                    <Label text="Out" style="-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                </VBox>
-            </HBox>
-            <Label fx:id="monthExpenseLabel" text="Rp 0" style="-fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: #111827;"/>
-            <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label fx:id="expenseTrendLabel" text="-0% vs Bulan Lalu" style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #DC2626;"/>
-            </HBox>
-        </VBox>
-    </HBox>
-
-    <!-- Chart + Side Cards Row -->
-    <HBox spacing="8">
-        <!-- Tren Penjualan Bulanan (2/3 width) -->
-        <VBox HBox.hgrow="ALWAYS" spacing="12" prefWidth="600" prefHeight="360" maxHeight="360"
-              style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-            <HBox alignment="CENTER_LEFT">
-                <VBox spacing="4">
-                    <Label text="Tren Penjualan Bulanan" style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
-                    <Label fx:id="chartSummaryLabel" text="Total: Rp 0 (Jan - Jun)" style="-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #64748b;"/>
-                </VBox>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label fx:id="growthBadge" text="+0% Pertumbuhan" 
-                       style="-fx-background-color: #eef2ff; -fx-text-fill: #1d4ed8; -fx-font-size: 11px; -fx-font-weight: 800; -fx-padding: 5 10; -fx-background-radius: 6;"/>
-            </HBox>
-            <LineChart fx:id="salesTrendChart" minHeight="220" prefHeight="240" maxHeight="250" legendVisible="false" animated="false" 
-                       createSymbols="false" horizontalGridLinesVisible="true" verticalGridLinesVisible="false">
-                <xAxis>
-                    <CategoryAxis fx:id="chartXAxis" side="BOTTOM"/>
-                </xAxis>
-                <yAxis>
-                    <NumberAxis fx:id="chartYAxis" side="LEFT"/>
-                </yAxis>
-            </LineChart>
-        </VBox>
-
-        <!-- Right Side Cards (1/3 width) -->
-        <VBox spacing="8" prefWidth="320" minWidth="300">
-            <!-- Produk Terlaris -->
-            <VBox spacing="14" prefHeight="172"
-                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-                <Label text="Produk Terlaris" style="-fx-font-size: 15px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
-                
-                <VBox fx:id="topProductsContainer" spacing="10">
-                    <!-- Product 1 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <VBox alignment="CENTER" prefWidth="40" prefHeight="40" 
-                              style="-fx-background-color: #f1f5f9; -fx-background-radius: 6;">
-                            <Label text="1" style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="topProduct1Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="topProduct1Qty" text="0 Terjual" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
-                        </VBox>
-                        <Label text="Teratas" style="-fx-font-size: 11px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                    </HBox>
-                    
-                    <!-- Product 2 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <VBox alignment="CENTER" prefWidth="40" prefHeight="40" 
-                              style="-fx-background-color: #f1f5f9; -fx-background-radius: 6;">
-                            <Label text="2" style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="topProduct2Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="topProduct2Qty" text="0 Terjual" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
-                        </VBox>
-                    </HBox>
-                    
-                    <!-- Product 3 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <VBox alignment="CENTER" prefWidth="40" prefHeight="40" 
-                              style="-fx-background-color: #f1f5f9; -fx-background-radius: 6;">
-                            <Label text="3" style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="topProduct3Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="topProduct3Qty" text="0 Terjual" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
-                        </VBox>
-                    </HBox>
-                </VBox>
-            </VBox>
-            
-            <!-- Stok Hampir Habis -->
-            <VBox spacing="14" prefHeight="172"
-                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 8; -fx-border-width: 1;">
-                <Label text="Stok Hampir Habis" style="-fx-font-size: 15px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
-                
-                <VBox fx:id="lowStockContainer" spacing="10">
-                    <!-- Low Stock 1 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="!" style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="lowStock1Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="lowStock1Qty" text="Sisa 0 unit" style="-fx-font-size: 11px; -fx-font-weight: 500; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <Button fx:id="restock1Btn" text="Restok" 
-                                style="-fx-background-color: transparent; -fx-text-fill: #1E40AF; -fx-font-size: 11px; -fx-font-weight: 700; -fx-cursor: hand;"/>
-                    </HBox>
-                    
-                    <!-- Low Stock 2 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="!" style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="lowStock2Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="lowStock2Qty" text="Sisa 0 unit" style="-fx-font-size: 11px; -fx-font-weight: 500; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <Button fx:id="restock2Btn" text="Restok" 
-                                style="-fx-background-color: transparent; -fx-text-fill: #1E40AF; -fx-font-size: 11px; -fx-font-weight: 700; -fx-cursor: hand;"/>
-                    </HBox>
-                    
-                    <!-- Low Stock 3 -->
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="!" style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #1E40AF;"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label fx:id="lowStock3Name" text="Memuat..." style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                            <Label fx:id="lowStock3Qty" text="Sisa 0 unit" style="-fx-font-size: 11px; -fx-font-weight: 500; -fx-text-fill: #1E40AF;"/>
-                        </VBox>
-                        <Button fx:id="restock3Btn" text="Restok" 
-                                style="-fx-background-color: transparent; -fx-text-fill: #1E40AF; -fx-font-size: 11px; -fx-font-weight: 700; -fx-cursor: hand;"/>
-                    </HBox>
-                </VBox>
-            </VBox>
-        </VBox>
-    </HBox>
-</VBox>
 </ScrollPane>
-
-
-

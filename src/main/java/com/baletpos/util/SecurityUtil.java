@@ -5,6 +5,9 @@ import com.baletpos.model.User;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import com.baletpos.util.Session;
+import com.baletpos.util.ModalUtil;
+import com.baletpos.util.PasswordUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -73,5 +76,3 @@ public class SecurityUtil {
         return false;
     }
 }
-
-

@@ -603,8 +603,9 @@
 .dashboard-scroll,
 .dashboard-scroll > .viewport,
 .dashboard-canvas {
-    -fx-background-color: #f6fafe;
+    -fx-background-color: #f5f7fb;
 }
+
 
 .dashboard-topbar {
     -fx-background-color: #ffffff;
@@ -699,11 +700,12 @@
     -fx-font-size: 14px;
     -fx-font-weight: 700;
     -fx-padding: 11 16;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 0;
     -fx-border-color: transparent;
 }
+
 
 .dashboard-sidebar .nav-button:hover {
     -fx-background-color: #e4e9ed;
@@ -711,10 +713,11 @@
 }
 
 .dashboard-sidebar .nav-button.active {
-    -fx-background-color: rgba(208, 225, 251, 0.45);
-    -fx-border-color: #00236f;
-    -fx-text-fill: #00236f;
+    -fx-background-color: #dbeafe;
+    -fx-border-color: transparent;
+    -fx-text-fill: #1d4ed8;
 }
+
 
 .nav-system {
     -fx-border-color: #c5c5d3;
@@ -1010,9 +1013,10 @@
 .dashboard-sidebar .nav-button.active {
     -fx-background-color: #dbeafe;
     -fx-text-fill: #1d4ed8;
-    -fx-border-color: #3b82f6;
-    -fx-border-width: 0 0 0 4;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
+
 
 .button,
 .btn,

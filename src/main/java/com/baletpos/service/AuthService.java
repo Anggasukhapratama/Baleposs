@@ -1,47 +1,45 @@
 package com.baletpos.service;
 
-import com.baletpos.dao.UserDAO;
-import com.baletpos.model.User;
-import com.baletpos.util.PasswordUtil;
-import com.baletpos.util.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.baletpos.config.AuthProvider;
 
-import java.util.Optional;
-
+/**
+ * Backward-compatible facade.
+ *
+ * - If APP_AUTH_PROVIDER=DATABASE (default), login uses Postgres/SQLite users table.
+ * - If APP_AUTH_PROVIDER=FIRESTORE, login uses Firestore.
+ */
 public class AuthService {
-    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
-    private final UserDAO userDAO;
+
+    private final DatabaseAuthService dbAuthService;
+    private final com.baletpos.service.firestore.FirestoreAuthService fsAuthService;
 
     public AuthService() {
-        this.userDAO = new UserDAO();
+        this.dbAuthService = new DatabaseAuthService();
+        this.fsAuthService = new com.baletpos.service.firestore.FirestoreAuthService();
     }
 
     public boolean login(String username, String password) {
-        try {
-            Optional<User> userOpt = userDAO.findByUsername(username);
-            
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-                if (PasswordUtil.checkPassword(password, user.getPasswordHash())) {
-                    Session.getInstance().login(user);
-                    logger.info("User {} logged in successfully", username);
-                    return true;
-                }
-            }
-            logger.warn("Failed login attempt for username: {}", username);
-        } catch (Exception e) {
-            logger.error("Login error", e);
-        }
-        return false;
+        AuthProvider provider = resolveProvider();
+        return switch (provider) {
+            case FIRESTORE -> fsAuthService.login(username, password);
+            case DATABASE -> dbAuthService.login(username, password);
+        };
     }
 
     public void logout() {
-        if (Session.getInstance().isLoggedIn()) {
-            logger.info("User {} logged out", Session.getInstance().getCurrentUser().getUsername());
-            Session.getInstance().logout();
+        AuthProvider provider = resolveProvider();
+        switch (provider) {
+            case FIRESTORE -> fsAuthService.logout();
+            case DATABASE -> dbAuthService.logout();
         }
     }
-}
 
+    private AuthProvider resolveProvider() {
+        String v = System.getenv("APP_AUTH_PROVIDER");
+        if (v == null || v.isBlank()) {
+            return AuthProvider.DATABASE;
+        }
+        return AuthProvider.valueOf(v.trim().toUpperCase());
+    }
+}
 

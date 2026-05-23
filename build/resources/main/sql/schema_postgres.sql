@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('ADMIN', 'KASIR')),
+    role TEXT NOT NULL CHECK (role IN ('KASIR', 'ADMIN_TOKO', 'ADMIN_KEUANGAN')),
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP(0) NOT NULL DEFAULT LOCALTIMESTAMP(0),
     updated_at TIMESTAMP(0) NOT NULL DEFAULT LOCALTIMESTAMP(0)
@@ -137,7 +137,10 @@ CREATE TABLE IF NOT EXISTS sale_items (
     subtotal INTEGER NOT NULL,
     serial_number TEXT,
     buyer_name TEXT,
-    buyer_nik TEXT
+    buyer_nik TEXT,
+    bonus_product_id INTEGER REFERENCES products(id),
+    bonus_product_name TEXT,
+    warranty_label TEXT
 );
 
 CREATE TABLE IF NOT EXISTS stock_movements (

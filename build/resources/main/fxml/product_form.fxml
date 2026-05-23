@@ -122,7 +122,7 @@
         <Button text="Batal" onAction="#handleCancel" 
                 style="-fx-background-color: white; -fx-text-fill: #475569; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12 28; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #e2e8f0; -fx-border-width: 1.5; -fx-cursor: hand;"/>
         <Button text="Simpan Produk" onAction="#handleSave" 
-                style="-fx-background-color: linear-gradient(to bottom, #1E40AF, #1F3A8A); -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12 32; -fx-background-radius: 10; -fx-border-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(37, 99, 235, 0.3), 6, 0, 0, 2);"/>
+                style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 900; -fx-padding: 12 32; -fx-background-radius: 8; -fx-border-radius: 8; -fx-cursor: hand;"/>
     </HBox>
 </VBox>
 

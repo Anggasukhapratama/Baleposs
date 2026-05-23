@@ -33,7 +33,7 @@
     <VBox styleClass="cart-pane">
         
         <!-- Header -->
-        <HBox alignment="CENTER_LEFT" spacing="6" styleClass="cart-header">
+        <HBox alignment="CENTER_LEFT" spacing="8" styleClass="cart-header">
             <Label text="Keranjang" styleClass="cart-title"/>
             <Label fx:id="cartCountLabel" text="0 item" styleClass="cart-count"/>
             <Region HBox.hgrow="ALWAYS"/>
@@ -49,7 +49,7 @@
         <VBox spacing="0" styleClass="cart-summary">
             
             <!-- Summary -->
-            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 12 16; -fx-background-color: #ffffff;">
+            <HBox spacing="12" alignment="CENTER_LEFT" style="-fx-padding: 16 18; -fx-background-color: #ffffff;">
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <HBox>
                         <Label text="Subtotal" style="-fx-text-fill: #64748b; -fx-font-size: 11px;"/>
@@ -70,10 +70,10 @@
             </HBox>
             
             <!-- Payment Methods -->
-            <VBox fx:id="paymentMethodsContainer" spacing="6" style="-fx-padding: 8 16;"/>
+            <VBox fx:id="paymentMethodsContainer" spacing="8" style="-fx-padding: 10 18;"/>
             
             <!-- Split + Kembali -->
-            <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 0 16 8 16;">
+            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 0 18 10 18;">
                 <Button fx:id="addPaymentBtn" text="+ Split" onAction="#handleAddPaymentMethod" styleClass="btn-secondary" style="-fx-font-size: 11px;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="Kembali:" style="-fx-text-fill: #64748b; -fx-font-size: 12px;"/>
@@ -81,7 +81,7 @@
             </HBox>
             
             <!-- Pay Button -->
-            <HBox style="-fx-padding: 8 16 12 16;">
+            <HBox style="-fx-padding: 10 18 16 18;">
                 <Button fx:id="payPrintButton" text="Bayar dan Cetak Struk" onAction="#handlePayAndPrint" maxWidth="Infinity" minHeight="46" HBox.hgrow="ALWAYS" styleClass="btn-success" style="-fx-font-size: 14px; -fx-font-weight: 900;"/>
             </HBox>
         </VBox>

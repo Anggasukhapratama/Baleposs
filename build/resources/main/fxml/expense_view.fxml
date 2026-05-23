@@ -49,13 +49,13 @@
     <!-- Action Buttons -->
     <HBox spacing="12">
         <Button fx:id="addButton" text="+ Tambah Biaya" onAction="#handleAdd" 
-                style="-fx-background-color: linear-gradient(to bottom, #dc2626, #b91c1c); -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 24; -fx-background-radius: 10; -fx-border-radius: 10; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(220, 38, 38, 0.3), 6, 0, 0, 2);"/>
+                style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 800; -fx-padding: 12 24; -fx-background-radius: 8; -fx-border-radius: 8; -fx-cursor: hand;"/>
         <Button fx:id="deleteButton" text="🗑 Hapus" onAction="#handleDelete" disable="true"
-                style="-fx-background-color: rgba(239, 68, 68, 0.1); -fx-text-fill: #dc2626; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 20; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: rgba(239, 68, 68, 0.3); -fx-border-width: 1.5; -fx-cursor: hand;"/>
+                style="-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-size: 13px; -fx-font-weight: 800; -fx-padding: 12 20; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #fecaca; -fx-border-width: 1; -fx-cursor: hand;"/>
         <Region HBox.hgrow="ALWAYS"/>
         <!-- Total Badge -->
         <HBox alignment="CENTER" spacing="8" 
-              style="-fx-background-color: linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15)); -fx-padding: 12 24; -fx-background-radius: 12; -fx-border-color: rgba(239, 68, 68, 0.2); -fx-border-radius: 12; -fx-border-width: 1;">
+              style="-fx-background-color: #fee2e2; -fx-padding: 12 24; -fx-background-radius: 10; -fx-border-color: #fecaca; -fx-border-radius: 10; -fx-border-width: 1;">
             <Label text="Total Pengeluaran:" style="-fx-font-size: 13px; -fx-text-fill: #b91c1c; -fx-font-weight: 600;"/>
             <Label fx:id="totalLabel" text="Rp 0" style="-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #dc2626;"/>
         </HBox>

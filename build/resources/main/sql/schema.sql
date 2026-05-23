@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('ADMIN', 'KASIR')),
+    role TEXT NOT NULL CHECK (role IN ('KASIR', 'ADMIN_TOKO', 'ADMIN_KEUANGAN')),
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
@@ -179,8 +179,15 @@ CREATE TABLE IF NOT EXISTS sale_items (
     discount_percent REAL NOT NULL DEFAULT 0,
     discount_amount INTEGER NOT NULL DEFAULT 0,
     subtotal INTEGER NOT NULL,
+    serial_number TEXT,
+    buyer_name TEXT,
+    buyer_nik TEXT,
+    bonus_product_id INTEGER,
+    bonus_product_name TEXT,
+    warranty_label TEXT,
     FOREIGN KEY (sale_id) REFERENCES sales(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (bonus_product_id) REFERENCES products(id)
 );
 
 -- =====================================================

@@ -2,11 +2,13 @@
 -- Data Awal untuk Testing
 
 -- =====================================================
--- DEFAULT ADMIN USER (Password: admin123)
--- Using plaintext for easy testing - will be hashed on first run
+-- DEFAULT TRIAL USERS
+-- Passwords are hashed/refreshed by DatabaseConfig on first run.
 -- =====================================================
 INSERT INTO users (username, password_hash, full_name, role, is_active) VALUES
-('admin', 'admin123', 'Administrator', 'ADMIN', 1),
+('admin', 'admin123', 'Admin Toko Legacy', 'ADMIN_TOKO', 1),
+('admintoko', 'toko123', 'Admin Toko', 'ADMIN_TOKO', 1),
+('adminkeuangan', 'keuangan123', 'Admin Keuangan', 'ADMIN_KEUANGAN', 1),
 ('kasir', 'kasir123', 'Kasir Utama', 'KASIR', 1),
 ('kasir2', 'kasir123', 'Kasir Cadangan', 'KASIR', 1),
 ('teknisi', 'teknisi123', 'Teknisi Laptop', 'KASIR', 1);

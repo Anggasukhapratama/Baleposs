@@ -9,27 +9,27 @@
            fx:controller="com.baletpos.controller.LoginController"
            style="-fx-background-color: #eef2f6;">
 
-    <HBox maxWidth="820" maxHeight="500" styleClass="panel">
-        <VBox prefWidth="330" spacing="18" alignment="CENTER_LEFT"
-              style="-fx-background-color: #17212f; -fx-background-radius: 8 0 0 8; -fx-padding: 34;">
+    <HBox maxWidth="860" maxHeight="500" styleClass="login-panel">
+        <VBox prefWidth="340" spacing="18" alignment="CENTER_LEFT"
+              style="-fx-background-color: #eff6ff; -fx-background-radius: 10 0 0 10; -fx-padding: 36; -fx-border-color: #bfdbfe; -fx-border-width: 0 1 0 0;">
             <ImageView fitHeight="52" preserveRatio="true">
                 <Image url="@../images/logo.png"/>
             </ImageView>
             <VBox spacing="6">
-                <Label text="BALET COMPUTER" style="-fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: white;"/>
-                <Label text="Point of Sale" style="-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #b6c2d1;"/>
+                <Label text="BALET COMPUTER" style="-fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: #1d4ed8;"/>
+                <Label text="Point of Sale" style="-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #475569;"/>
             </VBox>
             <Region VBox.vgrow="ALWAYS"/>
             <VBox spacing="8">
                 <Label text="Kasir dan admin dalam satu sistem." wrapText="true"
-                       style="-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #ffffff;"/>
+                       style="-fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #0f172a;"/>
                 <Label text="Masuk sesuai akun untuk membuka menu operasional toko." wrapText="true"
-                       style="-fx-font-size: 12px; -fx-text-fill: #b6c2d1;"/>
+                       style="-fx-font-size: 12px; -fx-text-fill: #64748b;"/>
             </VBox>
         </VBox>
 
         <VBox alignment="CENTER_LEFT" spacing="20" prefWidth="490"
-              style="-fx-background-color: white; -fx-background-radius: 0 8 8 0; -fx-padding: 42 46;">
+              style="-fx-background-color: white; -fx-background-radius: 0 10 10 0; -fx-padding: 42 48;">
             <VBox spacing="4">
                 <Label text="Masuk" style="-fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: #111827;"/>
                 <Label text="Gunakan akun kasir atau admin yang sudah dibuat." style="-fx-font-size: 13px; -fx-text-fill: #64748b;"/>
@@ -38,7 +38,7 @@
             <VBox spacing="14" maxWidth="Infinity">
                 <VBox spacing="6">
                     <Label text="Username" style="-fx-font-weight: 800; -fx-text-fill: #334155; -fx-font-size: 12px;"/>
-                    <TextField fx:id="usernameField" promptText="contoh: admin" maxWidth="Infinity"/>
+                    <TextField fx:id="usernameField" promptText="contoh: kasir" maxWidth="Infinity"/>
                 </VBox>
 
                 <VBox spacing="6">

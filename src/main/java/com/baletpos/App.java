@@ -50,20 +50,29 @@ public class App extends Application {
         // Apply light-only modern theme (NordLight - clean & minimal)
         Application.setUserAgentStylesheet(new NordLight().getUserAgentStylesheet());
 
-        // Initialize Database (Firebase)
+        // Initialize Database (Auth backend)
         try {
-            com.baletpos.config.FirebaseConfig.initialize();
+            // Always init local DB schema/migrations, because login uses Postgres/SQLite users table.
+            com.baletpos.config.DatabaseConfig.initialize();
+
+            // Only init Firebase when explicitly requested.
+            String provider = System.getenv("APP_AUTH_PROVIDER");
+            if (provider != null && provider.equalsIgnoreCase("FIRESTORE")) {
+                com.baletpos.config.FirebaseConfig.initialize();
+            }
+
 
             // Copy dummy images if first run
             ImageUtil.copyDummyImages();
 
         } catch (Exception e) {
             logger.error("Critical Error: Database initialization failed", e);
-            com.baletpos.util.ModalUtil.showError("Gagal terhubung ke database. Cek file serviceAccountKey.json Anda.", e);
+            com.baletpos.util.ModalUtil.showError("Gagal terhubung ke database.", e);
             javafx.application.Platform.exit();
             System.exit(1);
             return;
         }
+
 
         scene = new Scene(loadFXML("login"), 1366, 768);
 

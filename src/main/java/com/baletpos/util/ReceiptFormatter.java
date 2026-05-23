@@ -1,4 +1,4 @@
-﻿package com.baletpos.util;
+package com.baletpos.util;
 
 import com.baletpos.model.Sale;
 import com.baletpos.model.SaleItem;

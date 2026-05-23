@@ -673,6 +673,22 @@ function initializeApp() {
   setupManagementForms();
   setupAuth();
 
+  // sidebar toggle
+  const appShell = document.querySelector("#app-shell");
+  const toggleBtn = document.querySelector("#sidebar-toggle");
+  if (appShell && toggleBtn) {
+    // Sidebar: paksa default normal tiap load.
+    // Ini penting supaya saat refresh tombol toggle tidak menghilang/ikut ketutup.
+    appShell.classList.remove("is-sidebar-collapsed");
+    localStorage.removeItem("baletposFinanceSidebarCollapsed");
+
+
+    toggleBtn.addEventListener("click", () => {
+      const isCollapsed = appShell.classList.toggle("is-sidebar-collapsed");
+      localStorage.setItem("baletposFinanceSidebarCollapsed", String(isCollapsed));
+    });
+  }
+
   document.querySelector("#period-select").addEventListener("change", loadLiveData);
 
   const initialView = location.hash.replace("#", "");
@@ -691,3 +707,4 @@ function initializeApp() {
 }
 
 initializeApp();
+
