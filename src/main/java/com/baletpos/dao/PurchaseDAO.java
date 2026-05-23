@@ -1,118 +1,126 @@
 package com.baletpos.dao;
 
-import com.baletpos.config.FirestoreHelper;
+import com.baletpos.config.DatabaseConfig;
+import com.baletpos.config.DatabaseDialect;
+import com.baletpos.config.SqlDialect;
 import com.baletpos.model.*;
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Data Access Object untuk Pembelian (Purchase)
+ */
 public class PurchaseDAO {
     private static final Logger logger = LoggerFactory.getLogger(PurchaseDAO.class);
     private static final DateTimeFormatter PO_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter DB_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static final String COLLECTION = "purchases";
-    private static final String ITEMS_COL = "purchase_items";
-    private static final String STOCK_MOV_COL = "stock_movements";
-
-    public void createPurchase(Purchase purchase, boolean updateProductHpp) throws Exception {
-        Firestore db = FirestoreHelper.getDb();
-        WriteBatch batch = db.batch();
-
+    /**
+     * Membuat transaksi pembelian secara atomic
+     * 1. Generate nomor PO
+     * 2. Insert Purchase Header
+     * 3. Insert Purchase Items
+     * 4. Update stock produk (tambah)
+     * 5. Insert stock movements
+     * 6. Update HPP produk jika diminta
+     */
+    public void createPurchase(Purchase purchase, boolean updateProductHpp) throws SQLException {
+        Connection conn = null;
         try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
             // 1. Generate PO Number
-            String poNumber = generatePONumber();
+            String poNumber = generatePONumber(conn);
             purchase.setPurchaseNumber(poNumber);
             purchase.setPurchaseDate(LocalDateTime.now());
 
-            // 2. Generate Purchase ID
-            Long purchaseId = FirestoreHelper.getNextId(COLLECTION);
+            // 2. Insert Purchase Header
+            long purchaseId = insertPurchaseHeader(conn, purchase);
             purchase.setId(purchaseId);
-
-            DocumentReference purchaseRef = db.collection(COLLECTION).document(String.valueOf(purchaseId));
-            batch.set(purchaseRef, purchaseToMap(purchase));
 
             // 3. Process Items
             for (PurchaseItem item : purchase.getItems()) {
                 item.setPurchaseId(purchaseId);
 
+                // Get current product state
+                int currentStock = getProductStock(conn, item.getProductId());
+
                 // Insert Item
-                Long itemId = FirestoreHelper.getNextId(ITEMS_COL);
-                item.setId(itemId);
-                DocumentReference itemRef = db.collection(ITEMS_COL).document(String.valueOf(itemId));
-                batch.set(itemRef, purchaseItemToMap(item));
+                insertPurchaseItem(conn, item);
 
                 // Update Stock (Add)
-                DocumentReference prodRef = db.collection("products").document(String.valueOf(item.getProductId()));
-                batch.update(prodRef, "stock", FieldValue.increment(item.getQuantity()));
+                updateProductStock(conn, item.getProductId(), item.getQuantity());
 
                 // Update HPP if requested
                 if (updateProductHpp) {
-                    DocumentSnapshot prodDoc = prodRef.get().get();
-                    if (prodDoc.exists()) {
-                        Double marginPercent = prodDoc.getDouble("margin_percent");
-                        if (marginPercent == null) marginPercent = 10.0;
-                        
-                        BigDecimal newHpp = item.getHppPerUnit();
-                        BigDecimal marginAmount = newHpp.multiply(BigDecimal.valueOf(marginPercent))
-                                .divide(BigDecimal.valueOf(100), java.math.RoundingMode.HALF_UP);
-                        BigDecimal sellingPrice = newHpp.add(marginAmount).setScale(0, java.math.RoundingMode.HALF_UP);
-                        
-                        Map<String, Object> hppUpdates = new HashMap<>();
-                        hppUpdates.put("hpp", newHpp.intValue());
-                        hppUpdates.put("selling_price", sellingPrice.intValue());
-                        hppUpdates.put("updated_at", LocalDateTime.now().format(DB_DATE_FMT));
-                        batch.update(prodRef, hppUpdates);
-                    }
+                    updateProductHpp(conn, item.getProductId(), item.getHppPerUnit());
                 }
 
                 // Create Stock Movement
-                Long movId = FirestoreHelper.getNextId(STOCK_MOV_COL);
                 StockMovement movement = new StockMovement();
-                movement.setId(movId);
                 movement.setProductId(item.getProductId());
                 movement.setMovementType(StockMovement.MovementType.PURCHASE_IN);
                 movement.setReferenceType("PURCHASE");
                 movement.setReferenceId(purchaseId);
                 movement.setQuantityChange(item.getQuantity());
+                movement.setStockBefore(currentStock);
+                movement.setStockAfter(currentStock + item.getQuantity());
                 movement.setCreatedBy(purchase.getCreatedBy());
                 movement.setNotes("Pembelian " + poNumber);
 
-                DocumentReference movRef = db.collection(STOCK_MOV_COL).document(String.valueOf(movId));
-                batch.set(movRef, stockMovementToMap(movement));
+                insertStockMovement(conn, movement);
             }
 
-            batch.commit().get();
+            conn.commit();
             logger.info("Purchase transaction completed successfully: {}", poNumber);
 
         } catch (Exception e) {
-            logger.error("Transaction failed: {}", e.getMessage());
-            throw new Exception("Transaction failed: " + e.getMessage(), e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                    logger.error("Transaction rolled back due to error: {}", e.getMessage());
+                } catch (SQLException ex) {
+                    logger.error("Error rolling back transaction", ex);
+                }
+            }
+            throw new SQLException("Transaction failed: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Error closing connection", e);
+                }
+            }
         }
     }
 
     public List<Purchase> findAll() {
         List<Purchase> purchases = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .orderBy("purchase_date", Query.Direction.DESCENDING)
-                    .get();
+        String sql = "SELECT p.*, s.code as supplier_code, s.name as supplier_name, u.full_name as created_by_name " +
+                "FROM purchases p " +
+                "LEFT JOIN suppliers s ON p.supplier_id = s.id " +
+                "LEFT JOIN users u ON p.created_by = u.id " +
+                "ORDER BY p.purchase_date DESC";
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                purchases.add(mapDocumentToPurchase(doc));
+        try (Connection conn = DatabaseConfig.getConnection();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                purchases.add(mapResultSetToPurchase(rs));
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding all purchases", e);
         }
         return purchases;
@@ -120,211 +128,284 @@ public class PurchaseDAO {
 
     public List<Purchase> findByDateRange(LocalDate startDate, LocalDate endDate) {
         List<Purchase> purchases = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            
-            LocalDate effectiveStart = (startDate != null) ? startDate : LocalDate.of(2000, 1, 1);
-            LocalDate effectiveEnd = (endDate != null) ? endDate : LocalDate.of(2100, 12, 31);
-            String startStr = effectiveStart.atStartOfDay().format(DB_DATE_FMT);
-            String endStr = effectiveEnd.plusDays(1).atStartOfDay().format(DB_DATE_FMT);
+        String sql = "SELECT p.*, s.code as supplier_code, s.name as supplier_name, u.full_name as created_by_name " +
+                "FROM purchases p " +
+                "LEFT JOIN suppliers s ON p.supplier_id = s.id " +
+                "LEFT JOIN users u ON p.created_by = u.id " +
+                "WHERE " + SqlDialect.dateExpression("p.purchase_date") + " BETWEEN ? AND ? " +
+                "ORDER BY p.purchase_date DESC";
 
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereGreaterThanOrEqualTo("purchase_date", startStr)
-                    .whereLessThan("purchase_date", endStr)
-                    .orderBy("purchase_date", Query.Direction.DESCENDING)
-                    .get();
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                purchases.add(mapDocumentToPurchase(doc));
+            pstmt.setString(1, startDate.toString());
+            pstmt.setString(2, endDate.toString());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    purchases.add(mapResultSetToPurchase(rs));
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding purchases by date range", e);
         }
         return purchases;
     }
 
     public Purchase findByIdWithItems(Long id) {
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            DocumentSnapshot doc = db.collection(COLLECTION).document(String.valueOf(id)).get().get();
-            if (doc.exists()) {
-                Purchase purchase = mapDocumentToPurchase(doc);
-                purchase.setItems(findPurchaseItems(id));
-                return purchase;
+        String sql = "SELECT p.*, s.code as supplier_code, s.name as supplier_name, u.full_name as created_by_name " +
+                "FROM purchases p " +
+                "LEFT JOIN suppliers s ON p.supplier_id = s.id " +
+                "LEFT JOIN users u ON p.created_by = u.id " +
+                "WHERE p.id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, id);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Purchase purchase = mapResultSetToPurchase(rs);
+                    purchase.setItems(findPurchaseItems(conn, id));
+                    return purchase;
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding purchase by id: {}", id, e);
         }
         return null;
     }
 
     public Purchase findByNumber(String poNumber) {
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereEqualTo("purchase_number", poNumber)
-                    .limit(1)
-                    .get();
+        String sql = "SELECT p.*, s.code as supplier_code, s.name as supplier_name, u.full_name as created_by_name " +
+                "FROM purchases p " +
+                "LEFT JOIN suppliers s ON p.supplier_id = s.id " +
+                "LEFT JOIN users u ON p.created_by = u.id " +
+                "WHERE p.purchase_number = ?";
 
-            QuerySnapshot qs = future.get();
-            if (!qs.isEmpty()) {
-                Purchase purchase = mapDocumentToPurchase(qs.getDocuments().get(0));
-                purchase.setItems(findPurchaseItems(purchase.getId()));
-                return purchase;
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, poNumber);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Purchase purchase = mapResultSetToPurchase(rs);
+                    purchase.setItems(findPurchaseItems(conn, purchase.getId()));
+                    return purchase;
+                }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             logger.error("Error finding purchase by number: {}", poNumber, e);
         }
         return null;
     }
 
-    private List<PurchaseItem> findPurchaseItems(Long purchaseId) {
+    private List<PurchaseItem> findPurchaseItems(Connection conn, Long purchaseId) throws SQLException {
         List<PurchaseItem> items = new ArrayList<>();
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(ITEMS_COL)
-                    .whereEqualTo("purchase_id", purchaseId)
-                    .get();
+        String sql = "SELECT pi.*, p.sku as product_sku, p.name as product_name " +
+                "FROM purchase_items pi " +
+                "LEFT JOIN products p ON pi.product_id = p.id " +
+                "WHERE pi.purchase_id = ?";
 
-            for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
-                items.add(mapDocumentToPurchaseItem(doc));
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, purchaseId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    PurchaseItem item = new PurchaseItem();
+                    item.setId(rs.getLong("id"));
+                    item.setPurchaseId(rs.getLong("purchase_id"));
+                    item.setProductId(rs.getLong("product_id"));
+                    item.setProductSku(rs.getString("product_sku"));
+                    item.setProductName(rs.getString("product_name"));
+                    item.setQuantity(rs.getInt("quantity"));
+                    item.setHppPerUnit(BigDecimal.valueOf(rs.getLong("hpp_per_unit")));
+                    item.setSubtotal(BigDecimal.valueOf(rs.getLong("subtotal")));
+                    items.add(item);
+                }
             }
-        } catch (Exception e) {
-            logger.error("Error fetching purchase items", e);
         }
         return items;
     }
 
-    private String generatePONumber() {
+    private String generatePONumber(Connection conn) throws SQLException {
         String datePart = LocalDate.now().format(PO_DATE_FMT);
-        String prefix = "PO-" + datePart + "-";
+        String prefix = "PO";
 
-        try {
-            Firestore db = FirestoreHelper.getDb();
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION)
-                    .whereGreaterThanOrEqualTo("purchase_number", prefix)
-                    .whereLessThan("purchase_number", prefix + "\uf8ff")
-                    .orderBy("purchase_number", Query.Direction.DESCENDING)
-                    .limit(1)
-                    .get();
+        String sqlSelect = "SELECT last_number FROM invoice_sequences WHERE prefix = ? AND date_part = ?";
+        String sqlUpdate = "UPDATE invoice_sequences SET last_number = last_number + 1 WHERE prefix = ? AND date_part = ?";
+        String sqlInsert = "INSERT INTO invoice_sequences (prefix, date_part, last_number) VALUES (?, ?, 1)";
 
-            QuerySnapshot querySnapshot = future.get();
-            int nextNum = 1;
-            if (!querySnapshot.isEmpty()) {
-                String lastInv = querySnapshot.getDocuments().get(0).getString("purchase_number");
-                if (lastInv != null && lastInv.length() > prefix.length()) {
-                    try {
-                        String numPart = lastInv.substring(prefix.length());
-                        nextNum = Integer.parseInt(numPart) + 1;
-                    } catch (NumberFormatException ignored) {}
+        int nextNum = 1;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlSelect)) {
+            pstmt.setString(1, prefix);
+            pstmt.setString(2, datePart);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    nextNum = rs.getInt("last_number") + 1;
+                    try (PreparedStatement uPstmt = conn.prepareStatement(sqlUpdate)) {
+                        uPstmt.setString(1, prefix);
+                        uPstmt.setString(2, datePart);
+                        uPstmt.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement iPstmt = conn.prepareStatement(sqlInsert)) {
+                        iPstmt.setString(1, prefix);
+                        iPstmt.setString(2, datePart);
+                        iPstmt.executeUpdate();
+                    }
                 }
             }
-            return String.format("%s%04d", prefix, nextNum);
-        } catch (Exception e) {
-            logger.error("Error generating po number", e);
-            return prefix + System.currentTimeMillis();
         }
+
+        return String.format("%s-%s-%04d", prefix, datePart, nextNum);
     }
 
-    // Mapping Methods --------------------------------------------------------
+    private long insertPurchaseHeader(Connection conn, Purchase purchase) throws SQLException {
+        String sql = "INSERT INTO purchases (purchase_number, supplier_id, purchase_date, total_amount, notes, status, created_by) "
+                +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-    private Map<String, Object> purchaseToMap(Purchase p) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", p.getId());
-        map.put("purchase_number", p.getPurchaseNumber());
-        map.put("supplier_id", p.getSupplierId());
-        
-        if (p.getSupplierId() != null) {
-            try {
-                DocumentSnapshot suppDoc = FirestoreHelper.getDb().collection("suppliers").document(String.valueOf(p.getSupplierId())).get().get();
-                if (suppDoc.exists()) {
-                    map.put("supplier_name", suppDoc.getString("name"));
-                    map.put("supplier_code", suppDoc.getString("code"));
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, purchase.getPurchaseNumber());
+            pstmt.setLong(2, purchase.getSupplierId());
+            if (DatabaseConfig.getDialect() == DatabaseDialect.POSTGRES) {
+                pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(purchase.getPurchaseDate()));
+            } else {
+                pstmt.setString(3, purchase.getPurchaseDate().toString());
+            }
+            pstmt.setInt(4, purchase.getTotalAmount().intValue());
+            pstmt.setString(5, purchase.getNotes());
+            pstmt.setString(6, Purchase.Status.COMPLETED.name());
+            pstmt.setLong(7, purchase.getCreatedBy());
+
+            pstmt.executeUpdate();
+
+            // SQLite style: get last inserted ID
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT " + SqlDialect.lastInsertIdExpression() + "")) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                } else {
+                    throw new SQLException("Gagal membuat pembelian, ID tidak ditemukan.");
                 }
-            } catch (Exception ignored) {}
+            }
         }
-
-        map.put("purchase_date", p.getPurchaseDate().format(DB_DATE_FMT));
-        map.put("total_amount", p.getTotalAmount() != null ? p.getTotalAmount().longValue() : 0L);
-        map.put("notes", p.getNotes());
-        map.put("status", p.getStatus() != null ? p.getStatus().name() : "COMPLETED");
-        map.put("created_by", p.getCreatedBy());
-        map.put("created_at", LocalDateTime.now().format(DB_DATE_FMT));
-        return map;
     }
 
-    private Purchase mapDocumentToPurchase(DocumentSnapshot doc) {
-        Purchase p = new Purchase();
-        p.setId(doc.getLong("id"));
-        p.setPurchaseNumber(doc.getString("purchase_number"));
-        p.setSupplierId(doc.getLong("supplier_id"));
-        p.setSupplierCode(doc.getString("supplier_code"));
-        p.setSupplierName(doc.getString("supplier_name"));
+    private void insertPurchaseItem(Connection conn, PurchaseItem item) throws SQLException {
+        String sql = "INSERT INTO purchase_items (purchase_id, product_id, quantity, hpp_per_unit, subtotal) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
-        String dateStr = doc.getString("purchase_date");
-        if (dateStr != null) {
-            p.setPurchaseDate(LocalDateTime.parse(dateStr, DB_DATE_FMT));
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, item.getPurchaseId());
+            pstmt.setLong(2, item.getProductId());
+            pstmt.setInt(3, item.getQuantity());
+            pstmt.setInt(4, item.getHppPerUnit().intValue());
+            pstmt.setInt(5, item.getSubtotal().intValue());
+
+            pstmt.executeUpdate();
+        }
+    }
+
+    private int getProductStock(Connection conn, Long productId) throws SQLException {
+        String sql = "SELECT stock FROM products WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, productId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("stock");
+                }
+            }
+        }
+        return 0;
+    }
+
+    private void updateProductStock(Connection conn, Long productId, int change) throws SQLException {
+        String sql = "UPDATE products SET stock = stock + ?, updated_at = " + SqlDialect.nowExpression() + " WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, change);
+            pstmt.setLong(2, productId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    private void updateProductHpp(Connection conn, Long productId, BigDecimal newHpp) throws SQLException {
+        // Get current HPP and margin to recalculate selling price
+        String sqlSelect = "SELECT margin_percent FROM products WHERE id = ?";
+        double marginPercent = 10.0;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlSelect)) {
+            pstmt.setLong(1, productId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    marginPercent = rs.getDouble("margin_percent");
+                }
+            }
         }
 
-        p.setTotalAmount(BigDecimal.valueOf(doc.getLong("total_amount") != null ? doc.getLong("total_amount") : 0));
-        p.setNotes(doc.getString("notes"));
-        
-        String status = doc.getString("status");
-        if (status != null) p.setStatus(Purchase.Status.valueOf(status));
-        
-        p.setCreatedBy(doc.getLong("created_by"));
-        p.setCreatedByName(doc.getString("created_by_name"));
+        // Calculate new selling price
+        BigDecimal marginAmount = newHpp.multiply(BigDecimal.valueOf(marginPercent))
+                .divide(BigDecimal.valueOf(100), java.math.RoundingMode.HALF_UP);
+        BigDecimal sellingPrice = newHpp.add(marginAmount).setScale(0, java.math.RoundingMode.HALF_UP);
 
-        String createdAtStr = doc.getString("created_at");
+        String sqlUpdate = "UPDATE products SET hpp = ?, selling_price = ?, updated_at = " + SqlDialect.nowExpression() + " WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlUpdate)) {
+            pstmt.setInt(1, newHpp.intValue());
+            pstmt.setInt(2, sellingPrice.intValue());
+            pstmt.setLong(3, productId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    private void insertStockMovement(Connection conn, StockMovement movement) throws SQLException {
+        String sql = "INSERT INTO stock_movements (product_id, movement_type, reference_type, reference_id, quantity_change, stock_before, stock_after, notes, created_by) "
+                +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, movement.getProductId());
+            pstmt.setString(2, movement.getMovementType().name());
+            pstmt.setString(3, movement.getReferenceType());
+            pstmt.setLong(4, movement.getReferenceId());
+            pstmt.setInt(5, movement.getQuantityChange());
+            pstmt.setInt(6, movement.getStockBefore());
+            pstmt.setInt(7, movement.getStockAfter());
+            pstmt.setString(8, movement.getNotes());
+            pstmt.setLong(9, movement.getCreatedBy());
+
+            pstmt.executeUpdate();
+        }
+    }
+
+    private Purchase mapResultSetToPurchase(ResultSet rs) throws SQLException {
+        Purchase p = new Purchase();
+        p.setId(rs.getLong("id"));
+        p.setPurchaseNumber(rs.getString("purchase_number"));
+        p.setSupplierId(rs.getLong("supplier_id"));
+        p.setSupplierCode(rs.getString("supplier_code"));
+        p.setSupplierName(rs.getString("supplier_name"));
+
+        String dateStr = rs.getString("purchase_date");
+        if (dateStr != null) {
+            p.setPurchaseDate(LocalDateTime.parse(dateStr.replace(" ", "T")));
+        }
+
+        p.setTotalAmount(BigDecimal.valueOf(rs.getLong("total_amount")));
+        p.setNotes(rs.getString("notes"));
+        p.setStatus(Purchase.Status.valueOf(rs.getString("status")));
+        p.setCreatedBy(rs.getLong("created_by"));
+        p.setCreatedByName(rs.getString("created_by_name"));
+
+        String createdAtStr = rs.getString("created_at");
         if (createdAtStr != null) {
             p.setCreatedAt(LocalDateTime.parse(createdAtStr, DB_DATE_FMT));
         }
 
         return p;
-    }
-
-    private Map<String, Object> purchaseItemToMap(PurchaseItem item) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", item.getId());
-        map.put("purchase_id", item.getPurchaseId());
-        map.put("product_id", item.getProductId());
-        map.put("product_sku", item.getProductSku());
-        map.put("product_name", item.getProductName()); // Denormalized
-        map.put("quantity", item.getQuantity());
-        map.put("hpp_per_unit", item.getHppPerUnit() != null ? item.getHppPerUnit().longValue() : 0L);
-        map.put("subtotal", item.getSubtotal() != null ? item.getSubtotal().longValue() : 0L);
-        return map;
-    }
-
-    private PurchaseItem mapDocumentToPurchaseItem(DocumentSnapshot doc) {
-        PurchaseItem item = new PurchaseItem();
-        item.setId(doc.getLong("id"));
-        item.setPurchaseId(doc.getLong("purchase_id"));
-        item.setProductId(doc.getLong("product_id"));
-        item.setProductSku(doc.getString("product_sku"));
-        item.setProductName(doc.getString("product_name"));
-        
-        Long qty = doc.getLong("quantity");
-        item.setQuantity(qty != null ? qty.intValue() : 0);
-        
-        item.setHppPerUnit(BigDecimal.valueOf(doc.getLong("hpp_per_unit") != null ? doc.getLong("hpp_per_unit") : 0));
-        item.setSubtotal(BigDecimal.valueOf(doc.getLong("subtotal") != null ? doc.getLong("subtotal") : 0));
-        
-        return item;
-    }
-
-    private Map<String, Object> stockMovementToMap(StockMovement sm) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", sm.getId());
-        map.put("product_id", sm.getProductId());
-        map.put("movement_type", sm.getMovementType() != null ? sm.getMovementType().name() : null);
-        map.put("reference_type", sm.getReferenceType());
-        map.put("reference_id", sm.getReferenceId());
-        map.put("quantity_change", sm.getQuantityChange());
-        map.put("notes", sm.getNotes());
-        map.put("created_by", sm.getCreatedBy());
-        map.put("created_at", LocalDateTime.now().format(DB_DATE_FMT));
-        return map;
     }
 }
 

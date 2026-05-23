@@ -128,14 +128,17 @@ public class ExcelImportService {
                     continue;
 
                 try {
-                    Product product = parseProductRow(row);
-                    if (product != null && product.getSku() != null && !product.getSku().isBlank()) {
-                        // Check if SKU already exists
-                        if (productDAO.findBySku(product.getSku()).isPresent()) {
-                            result.addSkipped(product.getSku(), "SKU sudah ada");
+                    Product importedProduct = parseProductRow(row);
+                    if (importedProduct != null && importedProduct.getSku() != null
+                            && !importedProduct.getSku().isBlank()) {
+                        var existingProduct = productDAO.findBySku(importedProduct.getSku());
+                        if (existingProduct.isPresent()) {
+                            Product productToUpdate = mergeImportedProduct(existingProduct.get(), importedProduct);
+                            productDAO.save(productToUpdate);
+                            result.addUpdated(importedProduct.getSku());
                         } else {
-                            productDAO.save(product);
-                            result.addSuccess(product.getSku());
+                            productDAO.save(importedProduct);
+                            result.addSuccess(importedProduct.getSku());
                         }
                     }
                 } catch (Exception e) {
@@ -145,6 +148,18 @@ public class ExcelImportService {
         }
 
         return result;
+    }
+
+    private Product mergeImportedProduct(Product existingProduct, Product importedProduct) {
+        existingProduct.setName(importedProduct.getName());
+        existingProduct.setProductType(importedProduct.getProductType());
+        existingProduct.setHpp(importedProduct.getHpp());
+        existingProduct.setMarginPercent(importedProduct.getMarginPercent());
+        existingProduct.setSellingPrice(importedProduct.getSellingPrice());
+        existingProduct.setStock(importedProduct.getStock());
+        existingProduct.setDescription(importedProduct.getDescription());
+        existingProduct.setActive(true);
+        return existingProduct;
     }
 
     private Product parseProductRow(Row row) {
@@ -248,11 +263,16 @@ public class ExcelImportService {
      */
     public static class ImportResult {
         private final List<String> successList = new ArrayList<>();
+        private final List<String> updatedList = new ArrayList<>();
         private final List<String> skippedList = new ArrayList<>();
         private final List<String> failedList = new ArrayList<>();
 
         public void addSuccess(String sku) {
             successList.add(sku);
+        }
+
+        public void addUpdated(String sku) {
+            updatedList.add(sku);
         }
 
         public void addSkipped(String sku, String reason) {
@@ -267,6 +287,10 @@ public class ExcelImportService {
             return successList.size();
         }
 
+        public int getUpdatedCount() {
+            return updatedList.size();
+        }
+
         public int getSkippedCount() {
             return skippedList.size();
         }
@@ -279,6 +303,10 @@ public class ExcelImportService {
             return successList;
         }
 
+        public List<String> getUpdatedList() {
+            return updatedList;
+        }
+
         public List<String> getSkippedList() {
             return skippedList;
         }
@@ -289,8 +317,8 @@ public class ExcelImportService {
 
         public String getSummary() {
             return String.format(
-                    "Berhasil: %d produk\nDilewati: %d produk\nGagal: %d produk",
-                    successList.size(), skippedList.size(), failedList.size());
+                    "Produk baru: %d\nStok/produk diupdate: %d\nDilewati: %d\nGagal: %d",
+                    successList.size(), updatedList.size(), skippedList.size(), failedList.size());
         }
     }
 }

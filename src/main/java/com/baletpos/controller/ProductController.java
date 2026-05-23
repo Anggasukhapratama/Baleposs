@@ -684,13 +684,14 @@ public class ProductController {
                         "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0, 0, 8);");
         content.setMinWidth(380);
 
-        Label titleLabel = new Label(" Import Produk");
+        Label titleLabel = new Label(" Import Produk & Stok");
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
 
-        Label msgLabel = new Label("Pilih aksi yang ingin dilakukan:");
+        Label msgLabel = new Label("SKU baru akan dibuat sebagai produk baru. SKU yang sudah ada akan update stok, HPP, margin, harga, nama, dan tipe produk.");
+        msgLabel.setWrapText(true);
         msgLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #475569;");
 
-        Button btnTemplate = new Button(" Download Template");
+        Button btnTemplate = new Button(" Download Template Excel");
         btnTemplate.setStyle(
                 "-fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 12 20; " +
                         "-fx-background-radius: 8; -fx-cursor: hand; " +
@@ -760,10 +761,15 @@ public class ProductController {
                 com.baletpos.service.ExcelImportService service = new com.baletpos.service.ExcelImportService();
                 com.baletpos.service.ExcelImportService.ImportResult result = service.importProducts(file);
 
-                // Show result
                 StringBuilder msg = new StringBuilder();
                 msg.append(result.getSummary());
 
+                if (result.getUpdatedCount() > 0) {
+                    msg.append("\n\nDiupdate:\n");
+                    for (String s : result.getUpdatedList()) {
+                        msg.append(" ").append(s).append("\n");
+                    }
+                }
                 if (result.getSkippedCount() > 0) {
                     msg.append("\n\nDilewati:\n");
                     for (String s : result.getSkippedList()) {
@@ -777,7 +783,7 @@ public class ProductController {
                     }
                 }
 
-                if (result.getSuccessCount() > 0) {
+                if (result.getSuccessCount() > 0 || result.getUpdatedCount() > 0) {
                     NotificationUtil.success("Import Selesai", msg.toString());
                     applyFilters();
                     loadSummaryStats();

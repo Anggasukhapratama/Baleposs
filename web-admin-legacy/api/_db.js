@@ -102,6 +102,13 @@ function requireFinance(req, res) {
 }
 
 function getDateRange(period) {
+  if (period === "all") {
+    return {
+      start: "1900-01-01T00:00:00.000Z",
+      end: "2999-12-31T23:59:59.999Z",
+    };
+  }
+
   const now = new Date();
   const end = new Date(now);
   end.setHours(23, 59, 59, 999);

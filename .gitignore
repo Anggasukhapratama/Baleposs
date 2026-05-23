@@ -14,3 +14,6 @@ desktop-*-check.out.log
 desktop-*-check.err.log
 vercel-dev-*.out.log
 vercel-dev-*.err.log
+
+.vercel
+.env*
